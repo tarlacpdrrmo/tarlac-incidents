@@ -39,6 +39,7 @@
             box-shadow: 0 0 0 1px rgba(255,255,255,0.9), 0 0 3px rgba(0,0,0,0.5);
         }
 
+        /* Base styling for Legend and Filter boxes */
         .info.legend, .info.filter-box {
             background: #ffffff; 
             padding: 12px 14px; 
@@ -47,20 +48,25 @@
             border-radius: 8px; 
             border: 1px solid #e5e7eb; 
             min-width: 140px; 
+            transition: all 0.2s ease; /* Smooth animation when shrinking */
         }
 
-        /* NEW: Styles for the clickable header */
+        /* TRUE MINIMIZE: When minimized, strip away padding and width */
+        .info.filter-box.minimized {
+            min-width: 0; 
+            padding: 8px 12px;
+        }
+
         .filter-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
+            margin: 0;
         }
-        
-        /* Adds the red line back only when the box is open */
-        .filter-header.open {
+
+        /* Only show the red line if the box is NOT minimized */
+        .info.filter-box:not(.minimized) .filter-header {
             border-bottom: 2px solid #fee2e2;
             margin-bottom: 8px;
             padding-bottom: 4px;
@@ -73,6 +79,8 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin: 0;
+            border: none;
+            padding: 0;
         }
 
         .filter-box label {
@@ -152,11 +160,11 @@
                 filterControl.onAdd = function (map) {
                     var div = L.DomUtil.create('div', 'info filter-box');
                     
-                    // NEW: The clickable header area
+                    // Clickable header layout
                     div.innerHTML = `
-                        <div id="filterToggle" class="filter-header open">
+                        <div id="filterToggle" class="filter-header">
                             <strong>Data Filters</strong>
-                            <span id="toggleIcon" style="font-size: 10px; color: #6b7280;">▼</span>
+                            <span id="toggleIcon" style="font-size: 10px; color: #6b7280; margin-left: 12px;">▲</span>
                         </div>
                         <div id="filterContent">
                     `;
@@ -172,29 +180,28 @@
                     monthHTML += '</select>';
                     div.innerHTML += monthHTML;
 
-                    div.innerHTML += '</div>'; // Close filterContent
-                    
-                    // Stops map dragging when clicking inside the box
+                    div.innerHTML += '</div>'; 
                     L.DomEvent.disableClickPropagation(div);
-
                     return div;
                 };
                 filterControl.addTo(map);
 
-                // NEW: The Minimize/Maximize Logic
+                // TRUE MINIMIZE LOGIC
                 document.getElementById('filterToggle').addEventListener('click', function() {
+                    var box = this.parentElement; // Targets the whole white box
                     var content = document.getElementById('filterContent');
                     var icon = document.getElementById('toggleIcon');
-                    var header = document.getElementById('filterToggle');
                     
-                    if (content.style.display === 'none') {
+                    if (box.classList.contains('minimized')) {
+                        // Maximize it
+                        box.classList.remove('minimized');
                         content.style.display = 'block';
-                        icon.innerHTML = '▼';
-                        header.classList.add('open');
+                        icon.innerHTML = '▲'; // Point up to say "Roll me up"
                     } else {
+                        // Minimize it
+                        box.classList.add('minimized');
                         content.style.display = 'none';
-                        icon.innerHTML = '▲';
-                        header.classList.remove('open');
+                        icon.innerHTML = '▼'; // Point down to say "Drop me down"
                     }
                 });
 
