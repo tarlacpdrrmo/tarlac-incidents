@@ -167,7 +167,6 @@
 
             incidentMarkers.clearLayers();
 
-            // 1. CREATE A DICTIONARY TO GROUP INCIDENTS BY LOCATION
             var groupedData = {};
 
             allIncidentData.forEach(function(row) {
@@ -184,26 +183,23 @@
                         var monthMatch = (selectedMonth === 'All' || selectedMonth === rowMonth);
 
                         if (yearMatch && monthMatch) {
-                            // Create a unique key based on the coordinates
                             var locationKey = lat + "_" + lng;
                             
-                            // If this location hasn't been added yet, set it up
                             if (!groupedData[locationKey]) {
                                 groupedData[locationKey] = {
                                     lat: lat,
                                     lng: lng,
-                                    barangay: row['BARANGAY'] || 'Unknown Location',
+                                    // UPDATED TO 'LOCATION' HERE
+                                    locationName: row['LOCATION'] || 'Unknown Location', 
                                     totalIncidents: 0,
                                     types: {},
                                     lastDate: row['DATE']
                                 };
                             }
 
-                            // Add to the total count for this location
                             groupedData[locationKey].totalIncidents += 1;
-                            groupedData[locationKey].lastDate = row['DATE']; // Keeps the most recent date
+                            groupedData[locationKey].lastDate = row['DATE'];
 
-                            // Add to the specific TYPE count (e.g., Flooding: 2, Fire: 1)
                             var incidentType = row['TYPE'] || 'Unspecified';
                             if (!groupedData[locationKey].types[incidentType]) {
                                 groupedData[locationKey].types[incidentType] = 0;
@@ -214,9 +210,7 @@
                 }
             });
 
-            // 2. DRAW THE MARKERS USING THE GROUPED DATA
             Object.values(groupedData).forEach(function(loc) {
-                // Build the HTML list for the different incident types
                 var typesHtml = '';
                 for (var t in loc.types) {
                     typesHtml += `
@@ -230,13 +224,12 @@
                 
                 var marker = L.marker([loc.lat, loc.lng], { icon: centerIcon });
                 
-                // 3. THE NEW AGGREGATED POPUP
                 marker.bindPopup(`
                     <div style="line-height:1.8; min-width: 180px; font-size: 12px;">
                         <strong style="font-size: 10px; margin-bottom: 6px; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; display: block;">Location Summary</strong>
                         
                         <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 6px;">
-                            <span style="color: #111827; font-weight: 700;">${loc.barangay}</span>
+                            <span style="color: #111827; font-weight: 700;">${loc.locationName}</span>
                             <span style="color: #b91c1c; font-weight: 700; background: #fee2e2; padding: 0 6px; border-radius: 4px;">Total: ${loc.totalIncidents}</span>
                         </div>
                         
