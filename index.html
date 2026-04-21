@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tarlac Incident Monitoring</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        #map { height: 100vh; width: 100%; background: #f0f0f0; } 
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        
+        /* --- THE NEW AURA EFFECT --- */
+        .incident-aura {
+            /* Creates a faded red heat circle */
+            background: radial-gradient(circle, rgba(220, 38, 38, 0.9) 10%, rgba(220, 38, 38, 0.4) 40%, rgba(220, 38, 38, 0) 80%);
+            border-radius: 50%;
+            /* Makes it pulse like a heatwave */
+            animation: pulse 2s infinite ease-in-out;
+            pointer-events: none; /* Lets you click the center easily */
+        }
+
+        /* The Animation Code */
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(0.8); opacity: 0.8; }
+        }
+        
+        /* Center dot so they know exactly where to click */
+        .incident-center {
+            background-color: #991b1b;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+
+        /* Legend Styling */
+        .info.legend {
+            background: white; padding: 10px 14px;
+            font-size: 14px; line-height: 24px;
+            color: #333; box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px; border: 2px solid #b71c1c;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var map = L.map('map').setView([15.48, 120.59], 10);
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var incidentMarkers = L.featureGroup().addTo(map);
+
+        // YOUR INCIDENT GOOGLE SHEETS CSV LINK HERE
+        var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
+
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                results.data.forEach(function(row) {
+                    var lat = parseFloat(row['LATITUDE']);
+                    var lng = parseFloat(row['LONGITUDE']); 
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        
+                        // 1. Add the large pulsing Aura
+                        var auraIcon = L.divIcon({
+                            html: '',
+                            className: 'incident-aura',
+                            iconSize: [60, 60], // Size of the heatwave
+                            iconAnchor: [30, 30] // Centers the aura
+                        });
+                        L.marker([lat, lng], { icon: auraIcon, interactive: false }).addTo(incidentMarkers);
+
+                        // 2. Add a tiny clickable dot in the center for the popup
+                        var centerIcon = L.divIcon({
+                            html: '',
+                            className: 'incident-center',
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                        });
+                        var marker = L.marker([lat, lng], { icon: centerIcon });
+
+                        // The Popup
+                        marker.bindPopup(`
+                            <div style="line-height:1.6; min-width: 200px;">
+                                <strong style="font-size:1.2em; color:#b71c1c;">INCIDENT REPORT</strong><br>
+                                <hr style="margin: 5px 0;">
+                                <b>Date:</b> ${row['Date'] || 'N/A'}<br>
+                                <b>Type:</b> ${row['Incident Type'] || 'N/A'}<br>
+                                <b>Location:</b> ${row['Barangay'] || 'N/A'}<br>
+                                <b>Status:</b> ${row['Status'] || 'N/A'}<br>
+                            </div>
+                        `);
+
+                        marker.addTo(incidentMarkers);
+                    }
+                });
+
+                if (incidentMarkers.getLayers().length > 0) {
+                    map.fitBounds(incidentMarkers.getBounds(), { padding: [50, 50] });
+                }
+            }
+        });
+
+        // Add a Legend
+        var legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend');
+            div.innerHTML += '<strong style="display:block; margin-bottom:5px; color:#b71c1c;">Tarlac DRRM</strong>';
+            div.innerHTML += '<div style="display:inline-block; width:12px; height:12px; background:#991b1b; border-radius:50%; margin-right:6px; border: 2px solid #ffcccc;"></div> Active Incident';
+            return div;
+        };
+        legend.addTo(map);
+    </script>
+</body>
+</html>
