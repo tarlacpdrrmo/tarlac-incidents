@@ -9,29 +9,30 @@
         #map { height: 100vh; width: 100%; background: #f0f0f0; } 
         body { margin: 0; padding: 0; font-family: sans-serif; }
         
-        /* --- THE NEW AURA EFFECT --- */
+        /* Container to stop the aura from flying away */
+        .aura-container { background: none; border: none; }
+        
+        /* The pulsing heatwave */
         .incident-aura {
-            /* Creates a faded red heat circle */
-            background: radial-gradient(circle, rgba(220, 38, 38, 0.9) 10%, rgba(220, 38, 38, 0.4) 40%, rgba(220, 38, 38, 0) 80%);
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(220, 38, 38, 0.85) 10%, rgba(220, 38, 38, 0.3) 50%, rgba(220, 38, 38, 0) 80%);
             border-radius: 50%;
-            /* Makes it pulse like a heatwave */
             animation: pulse 2s infinite ease-in-out;
-            pointer-events: none; /* Lets you click the center easily */
+            pointer-events: none;
         }
 
-        /* The Animation Code */
         @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.8; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(0.8); opacity: 0.8; }
+            0% { transform: scale(0.6); opacity: 0.9; }
+            50% { transform: scale(1.3); opacity: 0.4; }
+            100% { transform: scale(0.6); opacity: 0.9; }
         }
         
-        /* Center dot so they know exactly where to click */
+        /* Smaller center dot */
         .incident-center {
             background-color: #991b1b;
-            border: 2px solid white;
+            border: 1.5px solid white;
             border-radius: 50%;
-            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            box-shadow: 0 0 3px rgba(0,0,0,0.5);
         }
 
         /* Legend Styling */
@@ -54,8 +55,8 @@
 
         var incidentMarkers = L.featureGroup().addTo(map);
 
-        // YOUR INCIDENT GOOGLE SHEETS CSV LINK HERE
-        var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
+        // PASTE YOUR CSV URL HERE
+        var csvUrl = 'YOUR_PUBLISHED_CSV_URL_HERE'; 
 
         Papa.parse(csvUrl, {
             download: true,
@@ -68,33 +69,32 @@
                     
                     if (!isNaN(lat) && !isNaN(lng)) {
                         
-                        // 1. Add the large pulsing Aura
+                        // Aura will now stay glued to the coordinates
                         var auraIcon = L.divIcon({
-                            html: '',
-                            className: 'incident-aura',
-                            iconSize: [60, 60], // Size of the heatwave
-                            iconAnchor: [30, 30] // Centers the aura
+                            html: '<div class="incident-aura"></div>',
+                            className: 'aura-container',
+                            iconSize: [50, 50],
+                            iconAnchor: [25, 25] 
                         });
                         L.marker([lat, lng], { icon: auraIcon, interactive: false }).addTo(incidentMarkers);
 
-                        // 2. Add a tiny clickable dot in the center for the popup
+                        // Smaller center dot (8x8 pixels)
                         var centerIcon = L.divIcon({
                             html: '',
                             className: 'incident-center',
-                            iconSize: [12, 12],
-                            iconAnchor: [6, 6]
+                            iconSize: [8, 8],
+                            iconAnchor: [4, 4]
                         });
                         var marker = L.marker([lat, lng], { icon: centerIcon });
 
-                        // The Popup
+                        // --- POPUP DATA UPDATED TO EXACT HEADERS ---
                         marker.bindPopup(`
                             <div style="line-height:1.6; min-width: 200px;">
                                 <strong style="font-size:1.2em; color:#b71c1c;">INCIDENT REPORT</strong><br>
                                 <hr style="margin: 5px 0;">
-                                <b>Date:</b> ${row['Date'] || 'N/A'}<br>
-                                <b>Type:</b> ${row['Incident Type'] || 'N/A'}<br>
-                                <b>Location:</b> ${row['Barangay'] || 'N/A'}<br>
-                                <b>Status:</b> ${row['Status'] || 'N/A'}<br>
+                                <b>Date:</b> ${row['DATE'] || 'N/A'}<br>
+                                <b>Type:</b> ${row['TYPE'] || 'N/A'}<br>
+                                <b>Location:</b> ${row['BARANGAY'] || 'N/A'}<br>
                             </div>
                         `);
 
@@ -113,7 +113,7 @@
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
             div.innerHTML += '<strong style="display:block; margin-bottom:5px; color:#b71c1c;">Tarlac DRRM</strong>';
-            div.innerHTML += '<div style="display:inline-block; width:12px; height:12px; background:#991b1b; border-radius:50%; margin-right:6px; border: 2px solid #ffcccc;"></div> Active Incident';
+            div.innerHTML += '<div style="display:inline-block; width:10px; height:10px; background:#991b1b; border-radius:50%; margin-right:6px; border: 1.5px solid #ffcccc;"></div> Active Incident';
             return div;
         };
         legend.addTo(map);
