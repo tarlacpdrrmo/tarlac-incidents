@@ -9,7 +9,6 @@
         #map { height: 100vh; width: 100%; background: #f0f0f0; } 
         body { margin: 0; padding: 0; font-family: sans-serif; }
         
-        /* Container to stop the aura from flying away */
         .aura-container { background: none; border: none; }
         
         /* The pulsing heatwave */
@@ -27,15 +26,14 @@
             100% { transform: scale(0.6); opacity: 0.9; }
         }
         
-        /* Smaller center dot */
+        /* SHRUNK: Thinner white border for a cleaner tiny dot */
         .incident-center {
             background-color: #991b1b;
-            border: 1.5px solid white;
+            border: 1px solid white; 
             border-radius: 50%;
-            box-shadow: 0 0 3px rgba(0,0,0,0.5);
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
         }
 
-        /* Legend Styling */
         .info.legend {
             background: white; padding: 10px 14px;
             font-size: 14px; line-height: 24px;
@@ -69,25 +67,25 @@
                     
                     if (!isNaN(lat) && !isNaN(lng)) {
                         
-                        // Aura will now stay glued to the coordinates
+                        // SHRUNK: Aura size reduced from [50, 50] to [30, 30]
                         var auraIcon = L.divIcon({
                             html: '<div class="incident-aura"></div>',
                             className: 'aura-container',
-                            iconSize: [50, 50],
-                            iconAnchor: [25, 25] 
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15] 
                         });
                         L.marker([lat, lng], { icon: auraIcon, interactive: false }).addTo(incidentMarkers);
 
-                        // Smaller center dot (8x8 pixels)
+                        // SHRUNK: Center dot reduced to 6x6 pixels
                         var centerIcon = L.divIcon({
                             html: '',
                             className: 'incident-center',
-                            iconSize: [8, 8],
-                            iconAnchor: [4, 4]
+                            iconSize: [6, 6],
+                            iconAnchor: [3, 3]
                         });
                         var marker = L.marker([lat, lng], { icon: centerIcon });
 
-                        // --- POPUP DATA UPDATED TO EXACT HEADERS ---
+                        // The Popup
                         marker.bindPopup(`
                             <div style="line-height:1.6; min-width: 200px;">
                                 <strong style="font-size:1.2em; color:#b71c1c;">INCIDENT REPORT</strong><br>
@@ -112,8 +110,8 @@
         var legend = L.control({position: 'bottomright'});
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += '<strong style="display:block; margin-bottom:5px; color:#b71c1c;">Incident Reported Geotag</strong>';
-            div.innerHTML += '<div style="display:inline-block; width:10px; height:10px; background:#991b1b; border-radius:50%; margin-right:6px; border: 1.5px solid #ffcccc;"></div> Incident Location';
+            div.innerHTML += '<strong style="display:block; margin-bottom:5px; color:#b71c1c;">Incident Heat Map</strong>';
+            div.innerHTML += '<div style="display:inline-block; width:8px; height:8px; background:#991b1b; border-radius:50%; margin-right:6px; border: 1px solid #ffcccc;"></div> Spatial Incident';
             return div;
         };
         legend.addTo(map);
