@@ -17,24 +17,24 @@
             font-family: 'Inter', sans-serif !important; 
         }
 
-        /* --- NEW: Floating Title Styling --- */
+        /* --- UPDATED: Professional Modern Title --- */
         .map-title {
             position: absolute;
-            top: 20px;
+            top: 24px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.7); 
-            backdrop-filter: blur(6px); 
-            padding: 10px 24px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            font-size: 16px;
+            background: rgba(255, 255, 255, 0.95); /* Less transparent for solid readability */
+            padding: 12px 32px;
+            border-radius: 6px;
+            border: none; /* No border */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Deep pop-up shadow */
+            font-size: 15px;
             font-weight: 800;
-            color: #111827;
-            letter-spacing: 1.5px;
-            pointer-events: none; /* Lets you click through it to the map */
+            color: #0f172a; /* Crisp dark slate font */
+            letter-spacing: 2px;
+            pointer-events: none; 
+            text-transform: uppercase;
         }
 
         /* --- Zoom Control Styling --- */
@@ -263,137 +263,4 @@
             if (currentZoom >= DOT_VISIBILITY_ZOOM_THRESHOLD) {
                 centerMarkers.forEach(el => el.classList.add('show-dot'));
             } else {
-                centerMarkers.forEach(el => el.classList.remove('show-dot'));
-            }
-        }
-
-        map.on('zoomend', toggleDots);
-
-        function updateMap(event) {
-            var selectedYear = document.getElementById('yearFilter').value;
-            var selectedMonth = document.getElementById('monthFilter').value;
-            var searchQuery = document.getElementById('searchFilter').value.toLowerCase(); 
-
-            incidentMarkers.clearLayers();
-
-            var groupedData = {};
-
-            allIncidentData.forEach(function(row) {
-                var lat = parseFloat(row['LATITUDE']);
-                var lng = parseFloat(row['LONGITUDE']); 
-                
-                if (!isNaN(lat) && !isNaN(lng) && row['DATE']) {
-                    let d = new Date(row['DATE']);
-                    if(!isNaN(d)) {
-                        let rowYear = d.getFullYear().toString();
-                        let rowMonth = d.toLocaleString('default', { month: 'long' });
-                        let locName = row['LOCATION'] || 'Unknown Location'; 
-
-                        var yearMatch = (selectedYear === 'All' || selectedYear === rowYear);
-                        var monthMatch = (selectedMonth === 'All' || selectedMonth === rowMonth);
-                        var searchMatch = locName.toLowerCase().includes(searchQuery); 
-
-                        if (yearMatch && monthMatch && searchMatch) {
-                            var locationKey = lat + "_" + lng;
-                            
-                            if (!groupedData[locationKey]) {
-                                groupedData[locationKey] = {
-                                    lat: lat,
-                                    lng: lng,
-                                    locationName: locName, 
-                                    totalIncidents: 0,
-                                    types: {},
-                                    lastDate: row['DATE']
-                                };
-                            }
-
-                            groupedData[locationKey].totalIncidents += 1;
-                            groupedData[locationKey].lastDate = row['DATE'];
-
-                            var incidentType = row['TYPE'] || 'Unspecified';
-                            if (!groupedData[locationKey].types[incidentType]) {
-                                groupedData[locationKey].types[incidentType] = 0;
-                            }
-                            groupedData[locationKey].types[incidentType] += 1;
-                        }
-                    }
-                }
-            });
-
-            var isZoomedIn = map.getZoom() >= DOT_VISIBILITY_ZOOM_THRESHOLD;
-
-            Object.values(groupedData).forEach(function(loc) {
-                var typesHtml = '';
-                for (var t in loc.types) {
-                    typesHtml += `
-                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f3f4f6; padding-bottom: 4px; margin-bottom: 4px;">
-                            <span style="color: #6b7280; font-weight: 600;">${t}:</span>
-                            <span style="color: #b91c1c; font-weight: 700;">${loc.types[t]}</span>
-                        </div>`;
-                }
-
-                var rgb = getHeatColor(loc.totalIncidents);
-
-                var dynamicAuraHtml = `<div class="incident-aura" style="--pulse-core: rgba(${rgb}, 0.85); --pulse-mid: rgba(${rgb}, 0.2); --pulse-edge: rgba(${rgb}, 0);"></div>`;
-                var customAuraIcon = L.divIcon({ html: dynamicAuraHtml, className: 'aura-container', iconSize: [30, 30], iconAnchor: [15, 15] });
-                
-                L.marker([loc.lat, loc.lng], { icon: customAuraIcon, interactive: false }).addTo(incidentMarkers);
-                
-                var dynamicCenterClassName = isZoomedIn ? 'center-container show-dot' : 'center-container';
-                var dynamicCenterHtml = `<div class="incident-center" style="background-color: rgb(${rgb});"></div>`;
-                var customCenterIcon = L.divIcon({ html: dynamicCenterHtml, className: dynamicCenterClassName, iconSize: [6, 6], iconAnchor: [3, 3] });
-                
-                var marker = L.marker([loc.lat, loc.lng], { icon: customCenterIcon });
-                
-                marker.bindPopup(`
-                    <div style="line-height:1.8; min-width: 180px; font-size: 12px;">
-                        <strong style="font-size: 10px; margin-bottom: 6px; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; display: block;">Location Summary</strong>
-                        
-                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 6px;">
-                            <span style="color: #111827; font-weight: 700;">${loc.locationName}</span>
-                            <span style="color: #b91c1c; font-weight: 700; background: #fee2e2; padding: 0 6px; border-radius: 4px;">Total: ${loc.totalIncidents}</span>
-                        </div>
-                        
-                        <div style="font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Incident Breakdown</div>
-                        ${typesHtml}
-                        
-                        <div style="font-size: 10px; color: #9ca3af; text-align: right; margin-top: 6px;">
-                            Last Logged: ${loc.lastDate}
-                        </div>
-                    </div>
-                `);
-                marker.addTo(incidentMarkers);
-            });
-
-            if (incidentMarkers.getLayers().length > 0 && (!event || event.type !== 'input')) {
-                map.fitBounds(incidentMarkers.getBounds(), { padding: [50, 50] });
-            }
-        }
-
-        var legend = L.control({position: 'bottomright'});
-        legend.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += '<strong style="font-size: 9px; font-weight: 700; color: #4b5563; text-transform: uppercase; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 8px; display: block;">Incident Density</strong>';
-            
-            const legendTiers = [
-                { label: '51+ (Violet)', rgb: '139, 92, 246' },
-                { label: '35-50', rgb: '88, 28, 135' },
-                { label: '21-34', rgb: '112, 26, 117' },
-                { label: '11-20', rgb: '127, 29, 29' },
-                { label: '3-10', rgb: '153, 27, 27' },
-                { label: '1-2 (Red)', rgb: '220, 38, 38' }
-            ];
-
-            legendTiers.forEach(t => {
-                div.innerHTML += `<div style="display:flex; align-items:center; font-size:11px; font-weight:600; margin-bottom: 5px;">
-                    <div style="width:10px; height:10px; background:rgb(${t.rgb}); border-radius:50%; margin-right:8px; box-shadow: 0 0 0 1px rgba(0,0,0,0.1);"></div> 
-                    ${t.label}
-                </div>`;
-            });
-
-            return div;
-        };
-        legend.addTo(map);
-    </script>
-</body>
-</html>
+                centerMarkers.forEach(el => el.classList.remove
