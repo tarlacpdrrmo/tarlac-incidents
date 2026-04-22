@@ -16,6 +16,44 @@
             margin: 0; padding: 0; 
             font-family: 'Inter', sans-serif !important; 
         }
+
+        /* --- NEW: Zoom Control Styling --- */
+        .leaflet-control-zoom {
+            opacity: 0.5; /* 50% transparency */
+            border: none !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+            transition: opacity 0.2s ease;
+        }
+        
+        /* Slight hover effect for better UX */
+        .leaflet-control-zoom:hover, .compass-box:hover {
+            opacity: 0.8; 
+        }
+
+        /* Make the + and - buttons smaller */
+        .leaflet-control-zoom a {
+            width: 22px !important;
+            height: 22px !important;
+            line-height: 22px !important;
+            font-size: 14px !important;
+            color: #374151 !important;
+        }
+
+        /* --- NEW: Compass Control Styling --- */
+        .compass-box {
+            background-color: rgba(255, 255, 255, 1);
+            opacity: 0.5; /* 50% transparency */
+            width: 22px;
+            padding: 4px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 8px !important;
+            cursor: default;
+            transition: opacity 0.2s ease;
+        }
         
         .aura-container { background: none; border: none; }
         
@@ -23,7 +61,6 @@
             width: 100%; height: 100%;
             background: radial-gradient(circle, var(--pulse-core) 10%, var(--pulse-mid) 50%, var(--pulse-edge) 80%);
             border-radius: 50%;
-            /* UPDATED: Changed from 2.5s to 8s for a super slow, breathing pulse */
             animation: pulse 8s infinite ease-in-out;
             pointer-events: none;
         }
@@ -113,12 +150,30 @@
 <body>
     <div id="map"></div>
     <script>
-        var map = L.map('map').setView([15.48, 120.59], 10);
+        var map = L.map('map', { zoomControl: false }).setView([15.48, 120.59], 10);
+        
+        // Re-add zoom control to apply our custom CSS properly
+        L.control.zoom({ position: 'topleft' }).addTo(map);
+
         var DOT_VISIBILITY_ZOOM_THRESHOLD = 15; 
         
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap'
         }).addTo(map);
+
+        // --- NEW: Compass Control JS ---
+        var compassControl = L.control({position: 'topleft'});
+        compassControl.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control compass-box');
+            div.innerHTML = `
+                <span style="color:#dc2626; font-size: 9px; font-weight: 800; font-family: 'Inter', sans-serif; line-height: 1;">N</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#e5e7eb" stroke="#374151" stroke-width="1.5" stroke-linejoin="round" style="margin-top: 2px;">
+                    <polygon points="12 2 18 22 12 17 6 22 12 2"></polygon>
+                </svg>
+            `;
+            return div;
+        };
+        compassControl.addTo(map);
 
         var incidentMarkers = L.featureGroup().addTo(map);
         var allIncidentData = [];
