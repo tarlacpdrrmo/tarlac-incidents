@@ -10,27 +10,23 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        #map { height: 100vh; width: 100%; background: #f3f4f6; } 
+        /* Changed background to white to blend with the mask */
+        #map { height: 100vh; width: 100%; background: #ffffff; } 
         
         body, .leaflet-container { 
             margin: 0; padding: 0; 
             font-family: 'Inter', sans-serif !important; 
         }
 
-        /* --- NEW: Zoom Control Styling --- */
         .leaflet-control-zoom {
-            opacity: 0.5; /* 50% transparency */
+            opacity: 0.5; 
             border: none !important;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
             transition: opacity 0.2s ease;
         }
         
-        /* Slight hover effect for better UX */
-        .leaflet-control-zoom:hover, .compass-box:hover {
-            opacity: 0.8; 
-        }
+        .leaflet-control-zoom:hover, .compass-box:hover { opacity: 0.8; }
 
-        /* Make the + and - buttons smaller */
         .leaflet-control-zoom a {
             width: 22px !important;
             height: 22px !important;
@@ -39,10 +35,9 @@
             color: #374151 !important;
         }
 
-        /* --- NEW: Compass Control Styling --- */
         .compass-box {
             background-color: rgba(255, 255, 255, 1);
-            opacity: 0.5; /* 50% transparency */
+            opacity: 0.5; 
             width: 22px;
             padding: 4px 0;
             display: flex;
@@ -150,9 +145,16 @@
 <body>
     <div id="map"></div>
     <script>
-        var map = L.map('map', { zoomControl: false }).setView([15.48, 120.59], 10);
+        // Restrict panning strictly to the general area of Tarlac
+        var tarlacBounds = L.latLngBounds([15.1, 120.1], [15.9, 120.8]);
         
-        // Re-add zoom control to apply our custom CSS properly
+        var map = L.map('map', { 
+            zoomControl: false,
+            maxBounds: tarlacBounds, // Prevent scrolling away
+            maxBoundsViscosity: 1.0,
+            minZoom: 9
+        }).setView([15.48, 120.59], 10);
+        
         L.control.zoom({ position: 'topleft' }).addTo(map);
 
         var DOT_VISIBILITY_ZOOM_THRESHOLD = 15; 
@@ -161,7 +163,31 @@
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // --- NEW: Compass Control JS ---
+        // --- NEW: INVERTED MASK LOGIC ---
+        // 1. Coordinates for a giant box covering the world
+        var outerRing = [
+            [-90, -180], [90, -180], [90, 180], [-90, 180], [-90, -180]
+        ];
+
+        // 2. Simplified rough coordinates for Tarlac boundaries (Inner Ring)
+        // Note: For a perfect cut, you replace this inner ring array with actual Tarlac GeoJSON coordinates.
+        var innerRing = [
+            [15.826, 120.485], [15.801, 120.627], [15.654, 120.675], 
+            [15.526, 120.730], [15.340, 120.669], [15.228, 120.591], 
+            [15.275, 120.430], [15.378, 120.301], [15.515, 120.315], 
+            [15.660, 120.380], [15.826, 120.485]
+        ];
+
+        // 3. Draw the polygon. The outer ring is drawn normally, inner ring cuts a hole.
+        L.polygon([outerRing, innerRing], {
+            color: '#ffffff',     // Stroke color of the mask
+            fillColor: '#ffffff', // Fill color covering the outside world
+            fillOpacity: 1,       // 100% solid white outside Tarlac
+            stroke: true,
+            weight: 2,            // Border thickness around Tarlac
+            opacity: 0.5          // Border transparency
+        }).addTo(map);
+
         var compassControl = L.control({position: 'topleft'});
         compassControl.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control compass-box');
@@ -181,12 +207,12 @@
         var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
 
         function getHeatColor(count) {
-            if (count > 50)  return '139, 92, 246'; // Violet (>50)
-            if (count >= 35) return '88, 28, 135';  // Deep Purple (35-50)
-            if (count >= 21) return '112, 26, 117'; // Plum (21-34)
-            if (count >= 11) return '127, 29, 29';  // Dark Maroon (11-20)
-            if (count >= 3)  return '153, 27, 27';  // Dark Red (3-10)
-            return '220, 38, 38';                   // Original Red (1-2)
+            if (count > 50)  return '139, 92, 246'; 
+            if (count >= 35) return '88, 28, 135';  
+            if (count >= 21) return '112, 26, 117'; 
+            if (count >= 11) return '127, 29, 29';  
+            if (count >= 3)  return '153, 27, 27';  
+            return '220, 38, 38';                   
         }
 
         Papa.parse(csvUrl, {
@@ -347,7 +373,7 @@
             });
 
             if (incidentMarkers.getLayers().length > 0 && (!event || event.type !== 'input')) {
-                map.fitBounds(incidentMarkers.getBounds(), { padding: [50, 50] });
+                // Remove map.fitBounds so the mask stays centered properly
             }
         }
 
