@@ -1,262 +1,197 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Tarlac Incident Monitoring</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    
     <style>
-        #map { height: 100vh; width: 100%; background: #f3f4f6; } 
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        #map { width: 100vw; height: 100vh; background-color: #f8f9fa; }
         
-        body, .leaflet-container { 
-            margin: 0; padding: 0; 
-            font-family: 'Inter', sans-serif !important; 
-        }
-        
-        .aura-container { background: none; border: none; }
-        
-        .incident-aura {
-            width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(220, 38, 38, 0.85) 10%, rgba(220, 38, 38, 0.2) 50%, rgba(220, 38, 38, 0) 80%);
-            border-radius: 50%;
-            animation: pulse 2.5s infinite ease-in-out;
-            pointer-events: none;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.7); opacity: 0.9; }
-            50% { transform: scale(1.4); opacity: 0.3; }
-            100% { transform: scale(0.7); opacity: 0.9; }
-        }
-        
-        .incident-center {
-            background-color: #dc2626;
-            border-radius: 50%;
-            box-shadow: 0 0 0 1px rgba(255,255,255,0.9), 0 0 3px rgba(0,0,0,0.5);
-        }
-
-        .info.legend, .info.filter-box {
-            background: #ffffff; 
-            padding: 12px 14px; 
-            color: #374151; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
-            border-radius: 8px; 
-            border: 1px solid #e5e7eb; 
-            min-width: 140px; 
-        }
-
-        .info strong {
-            color: #111827;
-            font-weight: 700;
-            font-size: 10px; 
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: block;
-            margin-bottom: 8px; 
-            border-bottom: 2px solid #fee2e2;
-            padding-bottom: 4px; 
-        }
-
-        .filter-box label {
-            font-size: 11px; 
-            font-weight: 600;
-            color: #6b7280;
-        }
-
-        .filter-box select {
-            width: 100%; 
-            padding: 5px 8px; 
-            margin-top: 2px; 
-            margin-bottom: 8px; 
-            border-radius: 4px; 
-            border: 1px solid #d1d5db; 
-            background-color: #f9fafb;
-            font-family: 'Inter', sans-serif; 
-            font-size: 11px; 
-            color: #1f2937;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .filter-box select:focus {
-            outline: none;
-            border-color: #dc2626;
-            background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-        }
-
-        .leaflet-popup-content-wrapper {
+        /* Professional UI Filter Box */
+        .filter-box {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 250px;
         }
-        .leaflet-popup-content { margin: 14px; }
+        .filter-box h3 { margin: 0 0 15px 0; font-size: 16px; color: #333; }
+        .filter-group { margin-bottom: 15px; }
+        .filter-group label { display: block; margin-bottom: 5px; font-size: 13px; color: #666; font-weight: 500;}
+        select { 
+            width: 100%; padding: 8px; border: 1px solid #ddd; 
+            border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px;
+        }
+
+        /* Static Red Pulse Marker Styling */
+        .pulse-marker {
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(220, 53, 69, 0.9);
+            width: 14px;
+            height: 14px;
+            animation: pulse 2s infinite;
+        }
+        .center-dot {
+            width: 4px;
+            height: 4px;
+            background-color: #fff;
+            border-radius: 50%;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+
+        .leaflet-popup-content-wrapper { font-family: 'Inter', sans-serif; border-radius: 8px; }
+        .popup-title { font-weight: 600; font-size: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px;}
     </style>
 </head>
 <body>
+
     <div id="map"></div>
+    
+    <div class="filter-box">
+        <h3>Map Filters</h3>
+        <div class="filter-group">
+            <label>Year</label>
+            <select id="filterYear"><option value="all">All Years</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Month</label>
+            <select id="filterMonth"><option value="all">All Months</option></select>
+        </div>
+    </div>
+
     <script>
-        var map = L.map('map').setView([15.48, 120.59], 10);
+        // 1. Initialize Map centered on Tarlac
+        const map = L.map('map').setView([15.4802, 120.5979], 11);
         
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap'
+        // 2. Terrain / Topographic Basemap
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
         }).addTo(map);
 
-        var incidentMarkers = L.featureGroup().addTo(map);
-        var allIncidentData = [];
+        let allData = [];
+        let mapMarkers = [];
 
-        // PASTE YOUR CSV URL HERE
-        var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
-
-        var auraIcon = L.divIcon({ html: '<div class="incident-aura"></div>', className: 'aura-container', iconSize: [30, 30], iconAnchor: [15, 15] });
-        var centerIcon = L.divIcon({ html: '', className: 'incident-center', iconSize: [4, 4], iconAnchor: [2, 2] });
+        // 3. Fetch Google Sheet CSV
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv"; // <-- Paste your link here
 
         Papa.parse(csvUrl, {
             download: true,
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-                allIncidentData = results.data;
+                allData = results.data;
+                populateFilters(allData);
+                renderMap(allData);
                 
-                var years = new Set();
-                var months = new Set();
-                
-                allIncidentData.forEach(row => {
-                    if(row['DATE']) {
-                        let d = new Date(row['DATE']);
-                        if(!isNaN(d)) {
-                            years.add(d.getFullYear());
-                            months.add(d.toLocaleString('default', { month: 'long' }));
-                        }
-                    }
-                });
-
-                var filterControl = L.control({position: 'topright'});
-                filterControl.onAdd = function (map) {
-                    var div = L.DomUtil.create('div', 'info filter-box');
-                    div.innerHTML = '<strong>Data Filters</strong>';
-                    
-                    var yearHTML = '<label>Select Year</label><select id="yearFilter"><option value="All">All Years</option>';
-                    Array.from(years).sort().reverse().forEach(y => yearHTML += `<option value="${y}">${y}</option>`);
-                    yearHTML += '</select>';
-                    div.innerHTML += yearHTML;
-
-                    var monthHTML = '<label>Select Month</label><select id="monthFilter"><option value="All">All Months</option>';
-                    const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                    Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => monthHTML += `<option value="${m}">${m}</option>`);
-                    monthHTML += '</select>';
-                    div.innerHTML += monthHTML;
-
-                    return div;
-                };
-                filterControl.addTo(map);
-
-                document.getElementById('yearFilter').addEventListener('change', updateMap);
-                document.getElementById('monthFilter').addEventListener('change', updateMap);
-
-                updateMap();
+                document.getElementById('filterYear').addEventListener('change', updateMap);
+                document.getElementById('filterMonth').addEventListener('change', updateMap);
             }
         });
 
-        function updateMap() {
-            var selectedYear = document.getElementById('yearFilter').value;
-            var selectedMonth = document.getElementById('monthFilter').value;
-
-            incidentMarkers.clearLayers();
-
-            var groupedData = {};
-
-            allIncidentData.forEach(function(row) {
-                var lat = parseFloat(row['LATITUDE']);
-                var lng = parseFloat(row['LONGITUDE']); 
-                
-                if (!isNaN(lat) && !isNaN(lng) && row['DATE']) {
-                    let d = new Date(row['DATE']);
-                    if(!isNaN(d)) {
-                        let rowYear = d.getFullYear().toString();
-                        let rowMonth = d.toLocaleString('default', { month: 'long' });
-
-                        var yearMatch = (selectedYear === 'All' || selectedYear === rowYear);
-                        var monthMatch = (selectedMonth === 'All' || selectedMonth === rowMonth);
-
-                        if (yearMatch && monthMatch) {
-                            var locationKey = lat + "_" + lng;
-                            
-                            if (!groupedData[locationKey]) {
-                                groupedData[locationKey] = {
-                                    lat: lat,
-                                    lng: lng,
-                                    // UPDATED TO 'LOCATION' HERE
-                                    locationName: row['LOCATION'] || 'Unknown Location', 
-                                    totalIncidents: 0,
-                                    types: {},
-                                    lastDate: row['DATE']
-                                };
-                            }
-
-                            groupedData[locationKey].totalIncidents += 1;
-                            groupedData[locationKey].lastDate = row['DATE'];
-
-                            var incidentType = row['TYPE'] || 'Unspecified';
-                            if (!groupedData[locationKey].types[incidentType]) {
-                                groupedData[locationKey].types[incidentType] = 0;
-                            }
-                            groupedData[locationKey].types[incidentType] += 1;
-                        }
-                    }
-                }
+        // 4. Populate Dropdowns
+        function populateFilters(data) {
+            const years = new Set();
+            const months = new Set();
+            
+            data.forEach(row => {
+                if (row.YEAR) years.add(row.YEAR);
+                if (row.MONTH) months.add(row.MONTH);
             });
 
-            Object.values(groupedData).forEach(function(loc) {
-                var typesHtml = '';
-                for (var t in loc.types) {
-                    typesHtml += `
-                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f3f4f6; padding-bottom: 4px; margin-bottom: 4px;">
-                            <span style="color: #6b7280; font-weight: 600;">${t}:</span>
-                            <span style="color: #b91c1c; font-weight: 700;">${loc.types[t]}</span>
-                        </div>`;
-                }
+            const yearSelect = document.getElementById('filterYear');
+            const monthSelect = document.getElementById('filterMonth');
 
-                L.marker([loc.lat, loc.lng], { icon: auraIcon, interactive: false }).addTo(incidentMarkers);
-                
-                var marker = L.marker([loc.lat, loc.lng], { icon: centerIcon });
-                
-                marker.bindPopup(`
-                    <div style="line-height:1.8; min-width: 180px; font-size: 12px;">
-                        <strong style="font-size: 10px; margin-bottom: 6px; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; display: block;">Location Summary</strong>
-                        
-                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 6px;">
-                            <span style="color: #111827; font-weight: 700;">${loc.locationName}</span>
-                            <span style="color: #b91c1c; font-weight: 700; background: #fee2e2; padding: 0 6px; border-radius: 4px;">Total: ${loc.totalIncidents}</span>
-                        </div>
-                        
-                        <div style="font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Incident Breakdown</div>
-                        ${typesHtml}
-                        
-                        <div style="font-size: 10px; color: #9ca3af; text-align: right; margin-top: 6px;">
-                            Last Logged: ${loc.lastDate}
-                        </div>
-                    </div>
-                `);
-                marker.addTo(incidentMarkers);
-            });
-
-            if (incidentMarkers.getLayers().length > 0) {
-                map.fitBounds(incidentMarkers.getBounds(), { padding: [50, 50] });
-            }
+            [...years].sort().forEach(y => { yearSelect.add(new Option(y, y)); });
+            [...months].sort().forEach(m => { monthSelect.add(new Option(m, m)); });
         }
 
-        var legend = L.control({position: 'bottomright'});
-        legend.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += '<strong style="border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 8px; display: block;">Map Legend</strong>';
-            div.innerHTML += '<div style="display:flex; align-items:center; font-size:12px; font-weight:600;"><div style="width:6px; height:6px; background:#dc2626; border-radius:50%; margin-right:8px; box-shadow: 0 0 0 1px rgba(220,38,38,0.3);"></div> Incident Hotspot</div>';
-            return div;
-        };
-        legend.addTo(map);
+        // 5. Filter and Render
+        function updateMap() {
+            const selectedYear = document.getElementById('filterYear').value;
+            const selectedMonth = document.getElementById('filterMonth').value;
+
+            const filtered = allData.filter(row => {
+                const matchYear = selectedYear === 'all' || row.YEAR === selectedYear;
+                const matchMonth = selectedMonth === 'all' || row.MONTH === selectedMonth;
+                return matchYear && matchMonth;
+            });
+
+            renderMap(filtered);
+        }
+
+        // 6. Aggregate Data and Map
+        function renderMap(data) {
+            // Clear existing markers
+            mapMarkers.forEach(m => map.removeLayer(m));
+            mapMarkers = [];
+
+            // Group by coordinate
+            const grouped = {};
+
+            data.forEach(row => {
+                const loc = row.LOCATION || "Unknown Location"; 
+                const lat = parseFloat(row.LATITUDE);
+                const lon = parseFloat(row.LONGITUDE);
+                const type = row.INCIDENT_TYPE || "Unspecified";
+
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    const key = `${lat},${lon}`;
+                    if (!grouped[key]) {
+                        grouped[key] = { lat, lon, loc, count: 0, types: {} };
+                    }
+                    grouped[key].count++;
+                    grouped[key].types[type] = (grouped[key].types[type] || 0) + 1;
+                }
+            });
+
+            // Draw uniform markers
+            Object.values(grouped).forEach(group => {
+                
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div class="pulse-marker"><div class="center-dot"></div></div>`,
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7]
+                });
+
+                // Build popup breakdown
+                let typeHtml = '';
+                for (const [type, tCount] of Object.entries(group.types)) {
+                    typeHtml += `<div>${type}: <strong>${tCount}</strong></div>`;
+                }
+
+                const popupContent = `
+                    <div class="popup-title">${group.loc}</div>
+                    <div style="margin-bottom: 5px;">Total Records: <strong>${group.count}</strong></div>
+                    <hr style="border: 0; border-top: 1px solid #eee;">
+                    ${typeHtml}
+                `;
+
+                const marker = L.marker([group.lat, group.lon], { icon: customIcon })
+                    .bindPopup(popupContent);
+                
+                marker.addTo(map);
+                mapMarkers.push(marker);
+            });
+        }
     </script>
 </body>
 </html>
