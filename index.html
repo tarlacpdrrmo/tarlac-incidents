@@ -46,7 +46,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
             border-radius: 8px; 
             border: 1px solid #e5e7eb; 
-            min-width: 140px; 
+            min-width: 150px; 
         }
 
         .info strong {
@@ -65,9 +65,12 @@
             font-size: 11px; 
             font-weight: 600;
             color: #6b7280;
+            display: block;
+            margin-top: 6px;
         }
 
-        .filter-box select {
+        /* Merged styling for select and the new text input */
+        .filter-box select, .filter-box input[type="text"] {
             width: 100%; 
             padding: 5px 8px; 
             margin-top: 2px; 
@@ -78,11 +81,12 @@
             font-family: 'Inter', sans-serif; 
             font-size: 11px; 
             color: #1f2937;
-            cursor: pointer;
             transition: all 0.2s ease;
+            box-sizing: border-box;
         }
+        .filter-box select { cursor: pointer; }
 
-        .filter-box select:focus {
+        .filter-box select:focus, .filter-box input[type="text"]:focus {
             outline: none;
             border-color: #dc2626;
             background-color: #ffffff;
@@ -108,7 +112,6 @@
         var incidentMarkers = L.featureGroup().addTo(map);
         var allIncidentData = [];
 
-        // PASTE YOUR CSV URL HERE
         var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
 
         var auraIcon = L.divIcon({ html: '<div class="incident-aura"></div>', className: 'aura-container', iconSize: [30, 30], iconAnchor: [15, 15] });
@@ -139,6 +142,9 @@
                     var div = L.DomUtil.create('div', 'info filter-box');
                     div.innerHTML = '<strong>Data Filters</strong>';
                     
+                    // Added Search Bar HTML here
+                    div.innerHTML += '<label>Search Location</label><input type="text" id="searchFilter" placeholder="e.g. San Roque...">';
+
                     var yearHTML = '<label>Select Year</label><select id="yearFilter"><option value="All">All Years</option>';
                     Array.from(years).sort().reverse().forEach(y => yearHTML += `<option value="${y}">${y}</option>`);
                     yearHTML += '</select>';
@@ -154,6 +160,8 @@
                 };
                 filterControl.addTo(map);
 
+                // Added event listener for the search bar
+                document.getElementById('searchFilter').addEventListener('input', updateMap);
                 document.getElementById('yearFilter').addEventListener('change', updateMap);
                 document.getElementById('monthFilter').addEventListener('change', updateMap);
 
@@ -161,9 +169,10 @@
             }
         });
 
-        function updateMap() {
+        function updateMap(event) {
             var selectedYear = document.getElementById('yearFilter').value;
             var selectedMonth = document.getElementById('monthFilter').value;
+            var searchQuery = document.getElementById('searchFilter').value.toLowerCase(); // Get search input
 
             incidentMarkers.clearLayers();
 
@@ -178,19 +187,21 @@
                     if(!isNaN(d)) {
                         let rowYear = d.getFullYear().toString();
                         let rowMonth = d.toLocaleString('default', { month: 'long' });
+                        let locName = row['LOCATION'] || 'Unknown Location'; // Extract location name
 
                         var yearMatch = (selectedYear === 'All' || selectedYear === rowYear);
                         var monthMatch = (selectedMonth === 'All' || selectedMonth === rowMonth);
+                        var searchMatch = locName.toLowerCase().includes(searchQuery); // Check against search query
 
-                        if (yearMatch && monthMatch) {
+                        // Check if all conditions match
+                        if (yearMatch && monthMatch && searchMatch) {
                             var locationKey = lat + "_" + lng;
                             
                             if (!groupedData[locationKey]) {
                                 groupedData[locationKey] = {
                                     lat: lat,
                                     lng: lng,
-                                    // UPDATED TO 'LOCATION' HERE
-                                    locationName: row['LOCATION'] || 'Unknown Location', 
+                                    locationName: locName, 
                                     totalIncidents: 0,
                                     types: {},
                                     lastDate: row['DATE']
@@ -244,7 +255,8 @@
                 marker.addTo(incidentMarkers);
             });
 
-            if (incidentMarkers.getLayers().length > 0) {
+            // Added check so map only auto-zooms on dropdown changes, not on every keystroke
+            if (incidentMarkers.getLayers().length > 0 && (!event || event.type !== 'input')) {
                 map.fitBounds(incidentMarkers.getBounds(), { padding: [50, 50] });
             }
         }
