@@ -17,26 +17,6 @@
             font-family: 'Inter', sans-serif !important; 
         }
 
-        /* --- UPDATED: Professional Modern Title --- */
-        .map-title {
-            position: absolute;
-            top: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.95); /* Less transparent for solid readability */
-            padding: 12px 32px;
-            border-radius: 6px;
-            border: none; /* No border */
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Deep pop-up shadow */
-            font-size: 15px;
-            font-weight: 800;
-            color: #0f172a; /* Crisp dark slate font */
-            letter-spacing: 2px;
-            pointer-events: none; 
-            text-transform: uppercase;
-        }
-
         /* --- Zoom Control Styling --- */
         .leaflet-control-zoom {
             opacity: 0.5; 
@@ -166,8 +146,6 @@
     </style>
 </head>
 <body>
-    
-    <div class="map-title">INCIDENT DENSITY MAP</div>
 
     <div id="map"></div>
     <script>
