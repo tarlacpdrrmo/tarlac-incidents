@@ -39,54 +39,66 @@
             box-shadow: 0 0 0 1px rgba(255,255,255,0.9), 0 0 3px rgba(0,0,0,0.5);
         }
 
+        /* Base styling for floating UI elements */
         .info.legend, .info.filter-box {
-            background: #ffffff; 
-            padding: 12px 14px; 
+            background: rgba(255, 255, 255, 0.7); /* 70% Transparency */
+            backdrop-filter: blur(6px); /* Frosted glass effect */
             color: #374151; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); /* Nice popup shadow at the back */
             border-radius: 8px; 
-            border: 1px solid #e5e7eb; 
-            min-width: 150px; 
+            border: 1px solid rgba(255, 255, 255, 0.4); 
         }
 
-        .info strong {
-            color: #111827;
+        /* Specific styling for the horizontal filter box */
+        .info.filter-box {
+            padding: 10px 14px; 
+            display: flex; /* Horizontal Layout */
+            gap: 12px; /* Space between items */
+            align-items: flex-end; /* Aligns inputs at the bottom */
+        }
+
+        /* Specific styling for the legend */
+        .info.legend {
+            padding: 10px 14px; 
+            min-width: 130px; 
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 9px; 
             font-weight: 700;
-            font-size: 10px; 
+            color: #4b5563;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            display: block;
-            margin-bottom: 8px; 
-            border-bottom: 2px solid #fee2e2;
-            padding-bottom: 4px; 
+            margin-bottom: 4px;
         }
 
-        .filter-box label {
-            font-size: 11px; 
-            font-weight: 600;
-            color: #6b7280;
-            display: block;
-            margin-top: 6px;
-        }
-
-        /* Merged styling for select and the new text input */
-        .filter-box select, .filter-box input[type="text"] {
-            width: 100%; 
-            padding: 5px 8px; 
-            margin-top: 2px; 
-            margin-bottom: 8px; 
+        /* Merged styling for select and the text input */
+        .filter-group select, .filter-group input[type="text"] {
+            width: 120px; /* Smaller overall width */
+            padding: 6px 8px; 
             border-radius: 4px; 
-            border: 1px solid #d1d5db; 
-            background-color: #f9fafb;
+            border: 1px solid rgba(209, 213, 219, 0.8); 
+            background-color: rgba(255, 255, 255, 0.9);
             font-family: 'Inter', sans-serif; 
             font-size: 11px; 
             color: #1f2937;
             transition: all 0.2s ease;
             box-sizing: border-box;
+            margin: 0;
         }
-        .filter-box select { cursor: pointer; }
+        
+        .filter-group input[type="text"] {
+            width: 150px; /* Slightly wider for the search bar to fit text */
+        }
 
-        .filter-box select:focus, .filter-box input[type="text"]:focus {
+        .filter-group select { cursor: pointer; }
+
+        .filter-group select:focus, .filter-group input[type="text"]:focus {
             outline: none;
             border-color: #dc2626;
             background-color: #ffffff;
@@ -140,27 +152,26 @@
                 var filterControl = L.control({position: 'topright'});
                 filterControl.onAdd = function (map) {
                     var div = L.DomUtil.create('div', 'info filter-box');
-                    div.innerHTML = '<strong>Data Filters</strong>';
                     
-                    // Added Search Bar HTML here
-                    div.innerHTML += '<label>Search Location</label><input type="text" id="searchFilter" placeholder="e.g. San Roque...">';
+                    // Grouped inputs for Horizontal Layout
+                    var searchHTML = '<div class="filter-group"><label>Search Location</label><input type="text" id="searchFilter" placeholder="e.g. San Roque..."></div>';
 
-                    var yearHTML = '<label>Select Year</label><select id="yearFilter"><option value="All">All Years</option>';
+                    var yearHTML = '<div class="filter-group"><label>Year</label><select id="yearFilter"><option value="All">All Years</option>';
                     Array.from(years).sort().reverse().forEach(y => yearHTML += `<option value="${y}">${y}</option>`);
-                    yearHTML += '</select>';
-                    div.innerHTML += yearHTML;
+                    yearHTML += '</select></div>';
 
-                    var monthHTML = '<label>Select Month</label><select id="monthFilter"><option value="All">All Months</option>';
+                    var monthHTML = '<div class="filter-group"><label>Month</label><select id="monthFilter"><option value="All">All Months</option>';
                     const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
                     Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => monthHTML += `<option value="${m}">${m}</option>`);
-                    monthHTML += '</select>';
-                    div.innerHTML += monthHTML;
+                    monthHTML += '</select></div>';
+
+                    // Inject all three elements side-by-side
+                    div.innerHTML = searchHTML + yearHTML + monthHTML;
 
                     return div;
                 };
                 filterControl.addTo(map);
 
-                // Added event listener for the search bar
                 document.getElementById('searchFilter').addEventListener('input', updateMap);
                 document.getElementById('yearFilter').addEventListener('change', updateMap);
                 document.getElementById('monthFilter').addEventListener('change', updateMap);
@@ -172,7 +183,7 @@
         function updateMap(event) {
             var selectedYear = document.getElementById('yearFilter').value;
             var selectedMonth = document.getElementById('monthFilter').value;
-            var searchQuery = document.getElementById('searchFilter').value.toLowerCase(); // Get search input
+            var searchQuery = document.getElementById('searchFilter').value.toLowerCase(); 
 
             incidentMarkers.clearLayers();
 
@@ -187,13 +198,12 @@
                     if(!isNaN(d)) {
                         let rowYear = d.getFullYear().toString();
                         let rowMonth = d.toLocaleString('default', { month: 'long' });
-                        let locName = row['LOCATION'] || 'Unknown Location'; // Extract location name
+                        let locName = row['LOCATION'] || 'Unknown Location'; 
 
                         var yearMatch = (selectedYear === 'All' || selectedYear === rowYear);
                         var monthMatch = (selectedMonth === 'All' || selectedMonth === rowMonth);
-                        var searchMatch = locName.toLowerCase().includes(searchQuery); // Check against search query
+                        var searchMatch = locName.toLowerCase().includes(searchQuery); 
 
-                        // Check if all conditions match
                         if (yearMatch && monthMatch && searchMatch) {
                             var locationKey = lat + "_" + lng;
                             
@@ -255,7 +265,6 @@
                 marker.addTo(incidentMarkers);
             });
 
-            // Added check so map only auto-zooms on dropdown changes, not on every keystroke
             if (incidentMarkers.getLayers().length > 0 && (!event || event.type !== 'input')) {
                 map.fitBounds(incidentMarkers.getBounds(), { padding: [50, 50] });
             }
@@ -264,8 +273,8 @@
         var legend = L.control({position: 'bottomright'});
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += '<strong style="border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 8px; display: block;">Map Legend</strong>';
-            div.innerHTML += '<div style="display:flex; align-items:center; font-size:12px; font-weight:600;"><div style="width:6px; height:6px; background:#dc2626; border-radius:50%; margin-right:8px; box-shadow: 0 0 0 1px rgba(220,38,38,0.3);"></div> Incident Hotspot</div>';
+            div.innerHTML += '<strong style="font-size: 9px; font-weight: 700; color: #4b5563; text-transform: uppercase; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 8px; display: block;">Map Legend</strong>';
+            div.innerHTML += '<div style="display:flex; align-items:center; font-size:11px; font-weight:600;"><div style="width:6px; height:6px; background:#dc2626; border-radius:50%; margin-right:8px; box-shadow: 0 0 0 1px rgba(220,38,38,0.3);"></div> Incident Hotspot</div>';
             return div;
         };
         legend.addTo(map);
