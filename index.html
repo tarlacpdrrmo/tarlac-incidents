@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Tarlac Incident Heatmap</title>
+    <title>Tarlac Incident Heatmap & Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -17,67 +17,75 @@
         body, html { margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         #map { height: 100vh; width: 100vw; background: #111; } 
 
-        /* Modern, minimal floating UI */
+        /* --- NEW: Ultra-Smooth Horizontal Filter Pill --- */
         .control-panel {
             position: absolute;
             top: 20px;
-            right: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 1000;
-            background: rgba(20, 20, 25, 0.85);
-            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.75); /* Deep slate frosted glass */
+            backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 12px;
+            padding: 10px 20px;
+            border-radius: 50px; /* Perfect pill shape */
             color: white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            min-width: 200px;
-        }
-
-        .control-panel h2 {
-            margin: 0 0 15px 0;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #ef4444; /* Alert Red */
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            align-items: center;
+            white-space: nowrap;
         }
 
         .filter-group {
-            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .filter-group label {
-            display: block;
-            font-size: 11px;
-            color: #9ca3af;
-            margin-bottom: 5px;
+            font-size: 10px;
+            color: #94a3b8;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
         }
 
-        .filter-group select {
-            width: 100%;
-            padding: 8px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        .filter-group select, .filter-group input[type="text"] {
+            padding: 6px 14px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             color: white;
-            border-radius: 6px;
+            border-radius: 20px; /* Rounded inputs */
             font-family: 'Inter', sans-serif;
-            font-size: 13px;
+            font-size: 11px;
             outline: none;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .filter-group select:focus {
-            border-color: #ef4444;
+        .filter-group input[type="text"] {
+            width: 140px;
+            cursor: text;
+        }
+
+        .filter-group select:focus, .filter-group input[type="text"]:focus {
+            border-color: #ef4444; /* Red highlight on focus */
+            background: rgba(0, 0, 0, 0.6);
         }
 
         /* Adjust default leaflet zoom controls for dark mode */
-        .leaflet-control-zoom a {
-            background-color: #1f2937 !important;
-            color: #fff !important;
-            border-color: #374151 !important;
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important; opacity: 0.7; }
+        .leaflet-control-zoom a { background-color: #1e293b !important; color: #cbd5e1 !important; border-color: #334155 !important; }
+
+        /* Popup Styling */
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            font-family: 'Inter', sans-serif;
         }
+        .leaflet-popup-content { margin: 14px; color: #1f2937; }
     </style>
 </head>
 <body>
@@ -85,28 +93,26 @@
     <div id="map"></div>
 
     <div class="control-panel">
-        <h2>Thermal Density</h2>
-        
         <div class="filter-group">
-            <label>Filter Year</label>
-            <select id="yearFilter">
-                <option value="All">All Time</option>
-            </select>
+            <label>Search</label>
+            <input type="text" id="searchFilter" placeholder="Location...">
         </div>
-
         <div class="filter-group">
-            <label>Filter Month</label>
-            <select id="monthFilter">
-                <option value="All">All Months</option>
-            </select>
+            <label>Year</label>
+            <select id="yearFilter"><option value="All">All Years</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Month</label>
+            <select id="monthFilter"><option value="All">All Months</option></select>
         </div>
     </div>
 
     <script>
-        // 1. Initialize Map (Centered on Tarlac)
-        var map = L.map('map').setView([15.4802, 120.5979], 11);
+        // 1. Initialize Map
+        var map = L.map('map', { zoomControl: false }).setView([15.4802, 120.5979], 11);
+        L.control.zoom({ position: 'topleft' }).addTo(map);
 
-        // 2. Dark Basemap (Perfect for Heatmaps)
+        // 2. Dark Basemap
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             subdomains: 'abcd',
@@ -115,9 +121,9 @@
 
         // Global variables
         var allData = [];
-        var heatLayer = null; // Holds the true heatmap
+        var heatLayer = null; 
+        var interactiveLayer = L.featureGroup().addTo(map); // Holds our invisible clickable markers
 
-        // Your published Google Sheet CSV
         var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
 
         // 3. Parse Data
@@ -128,15 +134,16 @@
             complete: function(results) {
                 allData = results.data;
                 populateFilters(allData);
-                renderHeatmap();
+                renderDashboard();
 
-                // Listen for dropdown changes
-                document.getElementById('yearFilter').addEventListener('change', renderHeatmap);
-                document.getElementById('monthFilter').addEventListener('change', renderHeatmap);
+                // Listeners
+                document.getElementById('searchFilter').addEventListener('input', renderDashboard);
+                document.getElementById('yearFilter').addEventListener('change', renderDashboard);
+                document.getElementById('monthFilter').addEventListener('change', renderDashboard);
             }
         });
 
-        // 4. Extract Years/Months for Dropdowns
+        // 4. Populate Dropdowns
         function populateFilters(data) {
             var years = new Set();
             var months = new Set();
@@ -152,30 +159,27 @@
             });
 
             var yearSelect = document.getElementById('yearFilter');
-            Array.from(years).sort().reverse().forEach(y => {
-                yearSelect.add(new Option(y, y));
-            });
+            Array.from(years).sort().reverse().forEach(y => { yearSelect.add(new Option(y, y)); });
 
             var monthSelect = document.getElementById('monthFilter');
             const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => {
-                monthSelect.add(new Option(m, m));
-            });
+            Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => { monthSelect.add(new Option(m, m)); });
         }
 
-        // 5. Draw the True Heatmap
-        function renderHeatmap() {
+        // 5. Draw Heatmap AND Interactive Markers
+        function renderDashboard() {
             var selectedYear = document.getElementById('yearFilter').value;
             var selectedMonth = document.getElementById('monthFilter').value;
+            var searchQuery = document.getElementById('searchFilter').value.toLowerCase();
 
-            // Remove old heatmap if it exists
-            if (heatLayer) {
-                map.removeLayer(heatLayer);
-            }
+            // Clear old layers
+            if (heatLayer) map.removeLayer(heatLayer);
+            interactiveLayer.clearLayers();
 
-            // Extract coordinates for the heat engine
             var heatPoints = [];
+            var groupedData = {};
 
+            // Aggregate Data
             allData.forEach(row => {
                 var lat = parseFloat(row['LATITUDE']);
                 var lng = parseFloat(row['LONGITUDE']);
@@ -185,33 +189,89 @@
                     if(!isNaN(d)) {
                         let rowYear = d.getFullYear().toString();
                         let rowMonth = d.toLocaleString('default', { month: 'long' });
+                        let locName = row['LOCATION'] || 'Unknown Location';
 
                         var matchYear = (selectedYear === 'All' || selectedYear === rowYear);
                         var matchMonth = (selectedMonth === 'All' || selectedMonth === rowMonth);
+                        var matchSearch = locName.toLowerCase().includes(searchQuery);
 
-                        if (matchYear && matchMonth) {
-                            // Format required by leaflet.heat: [lat, lng, intensity]
-                            // We use an intensity of 1 per record. The plugin handles blending.
+                        if (matchYear && matchMonth && matchSearch) {
+                            // 1. Add to heatmap engine
                             heatPoints.push([lat, lng, 1]); 
+
+                            // 2. Add to grouping logic for popups
+                            var locationKey = lat + "_" + lng;
+                            var incidentType = row['TYPE'] || 'Unspecified';
+
+                            if (!groupedData[locationKey]) {
+                                groupedData[locationKey] = {
+                                    lat: lat,
+                                    lng: lng,
+                                    locationName: locName,
+                                    totalIncidents: 0,
+                                    types: {},
+                                    lastDate: row['DATE']
+                                };
+                            }
+
+                            groupedData[locationKey].totalIncidents += 1;
+                            groupedData[locationKey].lastDate = row['DATE'];
+                            groupedData[locationKey].types[incidentType] = (groupedData[locationKey].types[incidentType] || 0) + 1;
                         }
                     }
                 }
             });
 
-            // Configure the Heatmap Physics
+            // Draw the True Heatmap
             heatLayer = L.heatLayer(heatPoints, {
-                radius: 25,     // Size of each point's influence
-                blur: 15,       // How much the points blend together
-                maxZoom: 14,    // Zoom level where points reach maximum intensity
-                max: 1.0,       // Maximum point intensity
-                gradient: {     // Custom color scale
-                    0.2: '#00f', // Blue (Low)
-                    0.4: '#0ff', // Cyan
-                    0.6: '#0f0', // Green
-                    0.8: '#ff0', // Yellow
-                    1.0: '#f00'  // Red (High)
-                }
+                radius: 25,     
+                blur: 15,       
+                maxZoom: 14,    
+                max: 1.0,       
+                gradient: { 0.2: '#00f', 0.4: '#0ff', 0.6: '#0f0', 0.8: '#ff0', 1.0: '#f00' }
             }).addTo(map);
+
+            // Draw the Interactive Overlays
+            Object.values(groupedData).forEach(function(loc) {
+                var typesHtml = '';
+                for (var t in loc.types) {
+                    typesHtml += `
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f3f4f6; padding-bottom: 4px; margin-bottom: 4px;">
+                            <span style="color: #6b7280; font-weight: 600;">${t}:</span>
+                            <span style="color: #b91c1c; font-weight: 700;">${loc.types[t]}</span>
+                        </div>`;
+                }
+
+                // Create a mostly invisible circle marker acting as a hit area
+                var invisibleMarker = L.circleMarker([loc.lat, loc.lng], {
+                    radius: 8,
+                    fillColor: "transparent",
+                    color: "rgba(255, 255, 255, 0.15)", // Extremely faint outline so you know where to click
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0
+                });
+                
+                invisibleMarker.bindPopup(`
+                    <div style="line-height:1.8; min-width: 180px; font-size: 12px;">
+                        <strong style="font-size: 10px; margin-bottom: 6px; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; display: block;">Location Summary</strong>
+                        
+                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 6px;">
+                            <span style="color: #111827; font-weight: 700;">${loc.locationName}</span>
+                            <span style="color: #b91c1c; font-weight: 700; background: #fee2e2; padding: 0 6px; border-radius: 4px;">Total: ${loc.totalIncidents}</span>
+                        </div>
+                        
+                        <div style="font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Incident Breakdown</div>
+                        ${typesHtml}
+                        
+                        <div style="font-size: 10px; color: #9ca3af; text-align: right; margin-top: 6px;">
+                            Last Logged: ${loc.lastDate}
+                        </div>
+                    </div>
+                `);
+
+                invisibleMarker.addTo(interactiveLayer);
+            });
         }
     </script>
 </body>
