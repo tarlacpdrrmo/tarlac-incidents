@@ -15,7 +15,7 @@
     
     <style>
         body, html { margin: 0; padding: 0; font-family: 'Inter', sans-serif; cursor: crosshair; }
-        #map { height: 100vh; width: 100vw; background: #111; } 
+        #map { height: 100vh; width: 100vw; background: #f3f4f6; } /* Adjusted fallback background for light mode */
 
         /* Ultra-Compact Horizontal Filter Pill */
         .control-panel {
@@ -55,14 +55,14 @@
         .filter-group input[type="text"] { width: 110px; cursor: text; }
         .filter-group select:focus, .filter-group input[type="text"]:focus { border-color: #ef4444; background: rgba(0, 0, 0, 0.6); }
 
-        /* --- NEW: Custom iOS-Style Theme Switch --- */
+        /* Custom iOS-Style Theme Switch */
         .switch-container {
             display: flex;
             align-items: center;
             gap: 6px;
             margin-left: 4px;
             padding-left: 12px;
-            border-left: 1px solid rgba(255, 255, 255, 0.1); /* Subtle divider line */
+            border-left: 1px solid rgba(255, 255, 255, 0.1); 
         }
         
         .switch {
@@ -95,19 +95,19 @@
             width: 12px;
             left: 2px;
             bottom: 2px;
-            background-color: #94a3b8; /* Subtle silver knob */
+            background-color: #94a3b8; 
             transition: .3s ease;
             border-radius: 50%;
         }
         
         input:checked + .slider {
-            background-color: rgba(255, 255, 255, 0.3); /* Frosted light state */
+            background-color: rgba(255, 255, 255, 0.3); 
             border-color: rgba(255, 255, 255, 0.5);
         }
         
         input:checked + .slider:before {
             transform: translateX(14px);
-            background-color: #ffffff; /* Bright white knob */
+            background-color: #ffffff; 
         }
 
         /* Category Toggles Styling */
@@ -255,7 +255,7 @@
 </head>
 <body>
 
-    <div class="watermark-container" id="watermark">
+    <div class="watermark-container light-mode-watermark" id="watermark">
         <img src="clean.jpg" alt="Tarlac Rescue Logo" class="watermark-logo">
         <div class="watermark-text">
             Tarlac Provincial Disaster Risk<br>
@@ -289,7 +289,7 @@
         <div class="switch-container">
             <label style="font-size: 8px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Light Map</label>
             <label class="switch">
-                <input type="checkbox" id="themeToggleCheckbox">
+                <input type="checkbox" id="themeToggleCheckbox" checked>
                 <span class="slider"></span>
             </label>
         </div>
@@ -315,11 +315,11 @@
             maxZoom: 19
         });
 
-        // Set default basemap
-        var currentBasemap = darkBasemap;
+        // Set default basemap to LIGHT
+        var currentBasemap = lightBasemap;
         currentBasemap.addTo(map);
 
-        // --- NEW: Toggle Switch Logic ---
+        // Toggle Switch Logic
         document.getElementById('themeToggleCheckbox').addEventListener('change', function(e) {
             map.removeLayer(currentBasemap);
             if (e.target.checked) {
