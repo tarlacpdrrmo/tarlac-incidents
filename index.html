@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Tarlac Incident Heatmap & Dashboard</title>
+    <title>Tarlac PDRRMO | Impact Analytics Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -15,9 +15,9 @@
     
     <style>
         body, html { margin: 0; padding: 0; font-family: 'Inter', sans-serif; cursor: crosshair; }
-        #map { height: 100vh; width: 100vw; background: #f3f4f6; } /* Adjusted fallback background for light mode */
+        #map { height: 100vh; width: 100vw; background: #f3f4f6; } 
 
-        /* Ultra-Compact Horizontal Filter Pill */
+        /* Control Panel */
         .control-panel {
             position: absolute;
             top: 15px; 
@@ -55,7 +55,7 @@
         .filter-group input[type="text"] { width: 110px; cursor: text; }
         .filter-group select:focus, .filter-group input[type="text"]:focus { border-color: #ef4444; background: rgba(0, 0, 0, 0.6); }
 
-        /* Custom iOS-Style Theme Switch */
+        /* Theme Switch */
         .switch-container {
             display: flex;
             align-items: center;
@@ -64,53 +64,14 @@
             padding-left: 12px;
             border-left: 1px solid rgba(255, 255, 255, 0.1); 
         }
-        
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 32px;
-            height: 18px;
-        }
-        
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            transition: .3s ease;
-            border-radius: 18px;
-        }
-        
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 12px;
-            width: 12px;
-            left: 2px;
-            bottom: 2px;
-            background-color: #94a3b8; 
-            transition: .3s ease;
-            border-radius: 50%;
-        }
-        
-        input:checked + .slider {
-            background-color: rgba(255, 255, 255, 0.3); 
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-        
-        input:checked + .slider:before {
-            transform: translateX(14px);
-            background-color: #ffffff; 
-        }
+        .switch { position: relative; display: inline-block; width: 32px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.15); transition: .3s ease; border-radius: 18px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: #94a3b8; transition: .3s ease; border-radius: 50%; }
+        input:checked + .slider { background-color: rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.5); }
+        input:checked + .slider:before { transform: translateX(14px); background-color: #ffffff; }
 
-        /* Category Toggles Styling */
+        /* Category Toggles */
         .category-panel {
             position: absolute;
             top: 60px; 
@@ -122,134 +83,73 @@
             flex-wrap: wrap;
             justify-content: center;
         }
+        .category-btn { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); color: #94a3b8; padding: 4px 14px; border-radius: 20px; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .category-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .category-btn.active { background: #ef4444; color: white; border-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
 
-        .category-btn {
-            background: rgba(15, 23, 42, 0.75);
+        /* --- NEW: Impact Analytics Panel --- */
+        .impact-panel {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #94a3b8;
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-family: 'Inter', sans-serif;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .category-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .category-btn.active {
-            background: #ef4444; 
+            border-radius: 12px;
+            padding: 16px;
             color: white;
-            border-color: #ef4444;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        /* Leaflet Controls */
+        .impact-panel h3 {
+            margin: 0;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .impact-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .impact-title { font-size: 10px; color: #cbd5e1; font-weight: 500; }
+        .impact-number { font-size: 22px; font-weight: 800; color: #ef4444; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .impact-number.flood { color: #3b82f6; } /* Blue for flood */
+        .impact-number.vehicle { color: #f59e0b; } /* Amber for vehicular */
+
+        /* Leaflet & Popups */
         .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important; opacity: 0.7; margin-top: 15px !important; margin-left: 15px !important; }
         .leaflet-control-zoom a { width: 20px !important; height: 20px !important; line-height: 20px !important; font-size: 14px !important; background-color: #1e293b !important; color: #cbd5e1 !important; border-color: #334155 !important; }
         .leaflet-control-zoom a:hover { background-color: #334155 !important; }
-
-        /* Popup Styling */
         .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); font-family: 'Inter', sans-serif; }
         .leaflet-popup-content { margin: 14px; color: #1f2937; }
 
         /* Dynamic Hover Tooltip */
-        #hoverTooltip {
-            position: absolute;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(4px);
-            color: #f8fafc;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 500;
-            pointer-events: none; 
-            z-index: 2000;
-            display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
-            transform: translate(15px, 15px); 
-            white-space: nowrap;
-        }
+        #hoverTooltip { position: absolute; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); color: #f8fafc; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 500; pointer-events: none; z-index: 2000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); transform: translate(15px, 15px); white-space: nowrap; }
         .tooltip-highlight { color: #ef4444; font-weight: 800; font-size: 13px; }
 
         /* Live Sync Indicator */
-        .live-status {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(12px);
-            padding: 6px 12px;
-            border-radius: 20px;
-            color: #10b981; 
-            font-size: 9px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            z-index: 1000;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
-        }
-        .live-dot {
-            width: 6px;
-            height: 6px;
-            background: #10b981;
-            border-radius: 50%;
-            animation: livePulse 2s infinite;
-        }
-        @keyframes livePulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
+        .live-status { position: absolute; bottom: 20px; right: 20px; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); padding: 6px 12px; border-radius: 20px; color: #10b981; font-size: 9px; font-weight: 700; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(16, 185, 129, 0.2); z-index: 1000; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease; }
+        .live-dot { width: 6px; height: 6px; background: #10b981; border-radius: 50%; animation: livePulse 2s infinite; }
+        @keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
         .update-flash { background: rgba(16, 185, 129, 0.2); color: #fff; border-color: #10b981; }
 
         /* Official Watermark Styling */
-        .watermark-container {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1000;
-            display: flex;
-            align-items: center; 
-            gap: 15px; 
-            opacity: 0.4; 
-            pointer-events: none; 
-            transition: opacity 0.3s ease;
-        }
-
-        .watermark-logo {
-            width: 75px; 
-            height: auto;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
-        }
-
-        .watermark-text {
-            color: #ffffff;
-            font-family: 'Inter', sans-serif;
-            font-size: 9px; 
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            line-height: 1.4; 
-            text-shadow: 0 2px 6px rgba(0,0,0,0.9); 
-            text-align: left;
-        }
-        
-        /* Watermark text changes color if light map is active to remain visible */
-        .light-mode-watermark .watermark-text {
-            color: #1f2937;
-            text-shadow: 0 2px 6px rgba(255,255,255,0.9);
-        }
+        .watermark-container { position: absolute; bottom: 20px; left: 20px; z-index: 1000; display: flex; align-items: center; gap: 15px; opacity: 0.4; pointer-events: none; transition: opacity 0.3s ease; }
+        .watermark-logo { width: 75px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+        .watermark-text { color: #ffffff; font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; line-height: 1.4; text-shadow: 0 2px 6px rgba(0,0,0,0.9); text-align: left; }
+        .light-mode-watermark .watermark-text { color: #1f2937; text-shadow: 0 2px 6px rgba(255,255,255,0.9); }
 
     </style>
 </head>
@@ -270,6 +170,20 @@
         <span id="liveStatusText">Live Sync Active</span>
     </div>
 
+    <div class="impact-panel" id="impactPanel">
+        <h3>Estimated Impact Analytics</h3>
+        
+        <div class="impact-stat">
+            <span class="impact-title">Typhoon/Flood Affected (Est. Families)</span>
+            <span class="impact-number flood" id="statFloodFamilies">0</span>
+        </div>
+        
+        <div class="impact-stat">
+            <span class="impact-title">Vehicular Accidents (Est. Vehicles Involved)</span>
+            <span class="impact-number vehicle" id="statVehicles">0</span>
+        </div>
+    </div>
+
     <div id="map"></div>
 
     <div class="control-panel">
@@ -285,7 +199,6 @@
             <label>Month</label>
             <select id="monthFilter"><option value="All">All Months</option></select>
         </div>
-        
         <div class="switch-container">
             <label style="font-size: 8px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Light Map</label>
             <label class="switch">
@@ -295,31 +208,18 @@
         </div>
     </div>
 
-    <div class="category-panel" id="categoryPanel">
-        </div>
+    <div class="category-panel" id="categoryPanel"></div>
 
     <script>
         var map = L.map('map', { zoomControl: false }).setView([15.4802, 120.5979], 11);
         L.control.zoom({ position: 'topleft' }).addTo(map);
 
-        // Basemap Layers
-        var darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
-        });
+        var darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 });
+        var lightBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 });
 
-        var lightBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
-        });
-
-        // Set default basemap to LIGHT
         var currentBasemap = lightBasemap;
         currentBasemap.addTo(map);
 
-        // Toggle Switch Logic
         document.getElementById('themeToggleCheckbox').addEventListener('change', function(e) {
             map.removeLayer(currentBasemap);
             if (e.target.checked) {
@@ -338,12 +238,10 @@
         var heatLayer = null; 
         var interactiveLayer = L.featureGroup().addTo(map); 
         var hoverTooltip = document.getElementById('hoverTooltip');
-        
         var currentCategory = 'All'; 
 
         var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
 
-        // Polling Engine Execution
         fetchData(true); 
         setInterval(function() { fetchData(false); }, 60000);
 
@@ -360,15 +258,11 @@
                     } else {
                         if (results.data.length !== allData.length) {
                             allData = results.data;
-                            
                             var currentYear = document.getElementById('yearFilter').value;
                             var currentMonth = document.getElementById('monthFilter').value;
-                            
                             populateFilters(allData); 
-                            
                             document.getElementById('yearFilter').value = currentYear;
                             document.getElementById('monthFilter').value = currentMonth;
-                            
                             renderDashboard();
                             flashUpdateNotification();
                         }
@@ -380,10 +274,8 @@
         function flashUpdateNotification() {
             var statusBox = document.getElementById('liveStatusBox');
             var statusText = document.getElementById('liveStatusText');
-            
             statusBox.classList.add('update-flash');
             statusText.innerText = "Data Updated!";
-            
             setTimeout(() => {
                 statusBox.classList.remove('update-flash');
                 statusText.innerText = "Live Sync Active";
@@ -403,9 +295,7 @@
                         months.add(d.toLocaleString('default', { month: 'long' }));
                     }
                 }
-                if(row['TYPE']) {
-                    types.add(row['TYPE'].trim());
-                }
+                if(row['TYPE']) { types.add(row['TYPE'].trim()); }
             });
 
             var yearSelect = document.getElementById('yearFilter');
@@ -431,20 +321,14 @@
 
         window.setCategory = function(cat) {
             currentCategory = cat;
-            
             var buttons = document.querySelectorAll('.category-btn');
             buttons.forEach(btn => {
-                if(btn.innerText === cat) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
+                if(btn.innerText === cat) { btn.classList.add('active'); } 
+                else { btn.classList.remove('active'); }
             });
-
             renderDashboard();
         };
 
-        // Listeners for manual filtering
         document.getElementById('searchFilter').addEventListener('input', renderDashboard);
         document.getElementById('yearFilter').addEventListener('change', renderDashboard);
         document.getElementById('monthFilter').addEventListener('change', renderDashboard);
@@ -463,16 +347,11 @@
             hoverTooltip.style.display = 'block';
             hoverTooltip.style.left = e.originalEvent.clientX + 'px';
             hoverTooltip.style.top = e.originalEvent.clientY + 'px';
-
             var incidentCount = 0;
             var searchRadiusMeters = 1000; 
-
             for(var i = 0; i < activeCoordinates.length; i++) {
-                if (e.latlng.distanceTo(activeCoordinates[i]) <= searchRadiusMeters) {
-                    incidentCount++;
-                }
+                if (e.latlng.distanceTo(activeCoordinates[i]) <= searchRadiusMeters) { incidentCount++; }
             }
-
             if (incidentCount > 0) {
                 hoverTooltip.innerHTML = `<span class="tooltip-highlight">${incidentCount}</span> incidents within 1km radius`;
             } else {
@@ -493,6 +372,10 @@
             var heatPoints = [];
             var groupedData = {};
             activeCoordinates = []; 
+            
+            // Impact Tracking Variables
+            var rawFloodIncidents = 0;
+            var rawVehicularIncidents = 0;
 
             allData.forEach(row => {
                 var lat = parseFloat(row['LATITUDE']);
@@ -504,16 +387,25 @@
                         let rowYear = d.getFullYear().toString();
                         let rowMonth = d.toLocaleString('default', { month: 'long' });
                         let locName = row['LOCATION'] || 'Unknown Location';
-                        let incidentType = row['TYPE'] || 'Unspecified';
+                        let incidentType = row['TYPE'] ? row['TYPE'].trim() : 'Unspecified';
 
                         var matchYear = (selectedYear === 'All' || selectedYear === rowYear);
                         var matchMonth = (selectedMonth === 'All' || selectedMonth === rowMonth);
                         var matchSearch = locName.toLowerCase().includes(searchQuery);
-                        var matchCategory = (currentCategory === 'All' || incidentType.trim() === currentCategory); 
+                        var matchCategory = (currentCategory === 'All' || incidentType === currentCategory); 
 
                         if (matchYear && matchMonth && matchSearch && matchCategory) {
                             heatPoints.push([lat, lng, 1]); 
                             activeCoordinates.push(L.latLng(lat, lng)); 
+
+                            // Tallying for Impact Analytics
+                            let lowerType = incidentType.toLowerCase();
+                            if(lowerType.includes('flood') || lowerType.includes('typhoon')) {
+                                rawFloodIncidents++;
+                            }
+                            if(lowerType.includes('accident') || lowerType.includes('vehicular') || lowerType.includes('crash')) {
+                                rawVehicularIncidents++;
+                            }
 
                             var locationKey = lat + "_" + lng;
 
@@ -535,6 +427,11 @@
                     }
                 }
             });
+
+            // Update Impact Panel (Using Multipliers for Estimates)
+            // Example Logic: 1 Flood Point = ~15 Affected Families. 1 Accident Point = ~2 Vehicles Involved.
+            document.getElementById('statFloodFamilies').innerText = (rawFloodIncidents * 15).toLocaleString();
+            document.getElementById('statVehicles').innerText = (rawVehicularIncidents * 2).toLocaleString();
 
             var initialZoom = map.getZoom();
             var initialRadius = Math.max(10, 45 - (initialZoom - 10) * 6);
@@ -570,18 +467,13 @@
                 ghostMarker.bindPopup(`
                     <div style="line-height:1.8; min-width: 180px; font-size: 12px;">
                         <strong style="font-size: 10px; margin-bottom: 6px; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; display: block;">Location Summary</strong>
-                        
                         <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 6px;">
                             <span style="color: #111827; font-weight: 700;">${loc.locationName}</span>
                             <span style="color: #b91c1c; font-weight: 700; background: #fee2e2; padding: 0 6px; border-radius: 4px;">Total: ${loc.totalIncidents}</span>
                         </div>
-                        
                         <div style="font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Incident Breakdown</div>
                         ${typesHtml}
-                        
-                        <div style="font-size: 10px; color: #9ca3af; text-align: right; margin-top: 6px;">
-                            Last Logged: ${loc.lastDate}
-                        </div>
+                        <div style="font-size: 10px; color: #9ca3af; text-align: right; margin-top: 6px;">Last Logged: ${loc.lastDate}</div>
                     </div>
                 `);
 
