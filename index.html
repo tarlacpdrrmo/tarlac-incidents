@@ -55,6 +55,48 @@
         .filter-group input[type="text"] { width: 110px; cursor: text; }
         .filter-group select:focus, .filter-group input[type="text"]:focus { border-color: #ef4444; background: rgba(0, 0, 0, 0.6); }
 
+        /* --- NEW: Category Toggles Styling --- */
+        .category-panel {
+            position: absolute;
+            top: 60px; /* Positioned right below the main pill */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .category-btn {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .category-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .category-btn.active {
+            background: #ef4444; /* Alert Red */
+            color: white;
+            border-color: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+
         /* Leaflet Controls */
         .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important; opacity: 0.7; margin-top: 15px !important; margin-left: 15px !important; }
         .leaflet-control-zoom a { width: 20px !important; height: 20px !important; line-height: 20px !important; font-size: 14px !important; background-color: #1e293b !important; color: #cbd5e1 !important; border-color: #334155 !important; }
@@ -64,7 +106,7 @@
         .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); font-family: 'Inter', sans-serif; }
         .leaflet-popup-content { margin: 14px; color: #1f2937; }
 
-        /* Dynamic Hover Tooltip Styling */
+        /* Dynamic Hover Tooltip */
         #hoverTooltip {
             position: absolute;
             background: rgba(15, 23, 42, 0.85);
@@ -84,7 +126,7 @@
         }
         .tooltip-highlight { color: #ef4444; font-weight: 800; font-size: 13px; }
 
-        /* --- NEW: Live Sync Indicator --- */
+        /* Live Sync Indicator */
         .live-status {
             position: absolute;
             bottom: 20px;
@@ -93,7 +135,7 @@
             backdrop-filter: blur(12px);
             padding: 6px 12px;
             border-radius: 20px;
-            color: #10b981; /* Emerald green */
+            color: #10b981; 
             font-size: 9px;
             font-weight: 700;
             display: flex;
@@ -118,7 +160,6 @@
             70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
-        /* Class to briefly flash the pill when data actually updates */
         .update-flash { background: rgba(16, 185, 129, 0.2); color: #fff; border-color: #10b981; }
 
     </style>
@@ -149,6 +190,9 @@
         </div>
     </div>
 
+    <div class="category-panel" id="categoryPanel">
+        </div>
+
     <script>
         var map = L.map('map', { zoomControl: false }).setView([15.4802, 120.5979], 11);
         L.control.zoom({ position: 'topleft' }).addTo(map);
@@ -164,17 +208,16 @@
         var heatLayer = null; 
         var interactiveLayer = L.featureGroup().addTo(map); 
         var hoverTooltip = document.getElementById('hoverTooltip');
+        
+        // --- NEW: Track Active Category ---
+        var currentCategory = 'All'; 
 
         var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
 
-        // --- NEW: Polling Engine Execution ---
-        // 1. Fetch immediately on load
+        // Polling Engine Execution
         fetchData(true); 
-        
-        // 2. Poll the Google Sheet every 60 seconds (60000 milliseconds)
         setInterval(function() { fetchData(false); }, 60000);
 
-        // Fetch Logic with Smart Delta Checking
         function fetchData(isInitialLoad) {
             Papa.parse(csvUrl, {
                 download: true,
@@ -186,17 +229,14 @@
                         populateFilters(allData);
                         renderDashboard();
                     } else {
-                        // Check if the total row count changed (new incident logged)
                         if (results.data.length !== allData.length) {
                             allData = results.data;
                             
-                            // Keep current dropdown selections intact
                             var currentYear = document.getElementById('yearFilter').value;
                             var currentMonth = document.getElementById('monthFilter').value;
                             
                             populateFilters(allData); 
                             
-                            // Restore selections if they still exist
                             document.getElementById('yearFilter').value = currentYear;
                             document.getElementById('monthFilter').value = currentMonth;
                             
@@ -208,7 +248,6 @@
             });
         }
 
-        // Briefly flashes the live indicator to let the user know an update just happened
         function flashUpdateNotification() {
             var statusBox = document.getElementById('liveStatusBox');
             var statusText = document.getElementById('liveStatusText');
@@ -225,6 +264,7 @@
         function populateFilters(data) {
             var years = new Set();
             var months = new Set();
+            var types = new Set(); // --- NEW: Extract unique categories
             
             data.forEach(row => {
                 if(row['DATE']) {
@@ -234,17 +274,50 @@
                         months.add(d.toLocaleString('default', { month: 'long' }));
                     }
                 }
+                if(row['TYPE']) {
+                    types.add(row['TYPE'].trim());
+                }
             });
 
             var yearSelect = document.getElementById('yearFilter');
-            yearSelect.innerHTML = '<option value="All">All Years</option>'; // Reset
+            yearSelect.innerHTML = '<option value="All">All Years</option>'; 
             Array.from(years).sort().reverse().forEach(y => { yearSelect.add(new Option(y, y)); });
 
             var monthSelect = document.getElementById('monthFilter');
-            monthSelect.innerHTML = '<option value="All">All Months</option>'; // Reset
+            monthSelect.innerHTML = '<option value="All">All Months</option>'; 
             const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => { monthSelect.add(new Option(m, m)); });
+
+            // --- NEW: Generate Category Buttons ---
+            var catPanel = document.getElementById('categoryPanel');
+            var buttonsHtml = `<button class="category-btn ${currentCategory === 'All' ? 'active' : ''}" onclick="setCategory('All')">All</button>`;
+            
+            Array.from(types).sort().forEach(t => {
+                if(t !== "") {
+                    let isActive = (currentCategory === t) ? 'active' : '';
+                    buttonsHtml += `<button class="category-btn ${isActive}" onclick="setCategory('${t}')">${t}</button>`;
+                }
+            });
+            catPanel.innerHTML = buttonsHtml;
         }
+
+        // --- NEW: Function to handle category clicks ---
+        window.setCategory = function(cat) {
+            currentCategory = cat;
+            
+            // Visually update buttons
+            var buttons = document.querySelectorAll('.category-btn');
+            buttons.forEach(btn => {
+                if(btn.innerText === cat) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Redraw map with new filter
+            renderDashboard();
+        };
 
         // Listeners for manual filtering
         document.getElementById('searchFilter').addEventListener('input', renderDashboard);
@@ -306,17 +379,18 @@
                         let rowYear = d.getFullYear().toString();
                         let rowMonth = d.toLocaleString('default', { month: 'long' });
                         let locName = row['LOCATION'] || 'Unknown Location';
+                        let incidentType = row['TYPE'] || 'Unspecified';
 
                         var matchYear = (selectedYear === 'All' || selectedYear === rowYear);
                         var matchMonth = (selectedMonth === 'All' || selectedMonth === rowMonth);
                         var matchSearch = locName.toLowerCase().includes(searchQuery);
+                        var matchCategory = (currentCategory === 'All' || incidentType.trim() === currentCategory); // --- NEW: Apply category filter
 
-                        if (matchYear && matchMonth && matchSearch) {
+                        if (matchYear && matchMonth && matchSearch && matchCategory) {
                             heatPoints.push([lat, lng, 1]); 
                             activeCoordinates.push(L.latLng(lat, lng)); 
 
                             var locationKey = lat + "_" + lng;
-                            var incidentType = row['TYPE'] || 'Unspecified';
 
                             if (!groupedData[locationKey]) {
                                 groupedData[locationKey] = {
