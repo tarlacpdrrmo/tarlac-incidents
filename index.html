@@ -158,22 +158,22 @@
         }
         .update-flash { background: rgba(16, 185, 129, 0.2); color: #fff; border-color: #10b981; }
 
-        /* --- UPDATED: Official Watermark Styling --- */
+        /* Official Watermark Styling */
         .watermark-container {
             position: absolute;
             bottom: 20px;
             left: 20px;
             z-index: 1000;
             display: flex;
-            align-items: center; /* This perfectly centers the text with the logo vertically */
-            gap: 15px; /* Slightly more space to breathe */
+            align-items: center; 
+            gap: 15px; 
             opacity: 0.4; 
             pointer-events: none; 
             transition: opacity 0.3s ease;
         }
 
         .watermark-logo {
-            width: 75px; /* Increased size */
+            width: 75px; 
             height: auto;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
         }
@@ -181,20 +181,26 @@
         .watermark-text {
             color: #ffffff;
             font-family: 'Inter', sans-serif;
-            font-size: 9px; /* Decreased size */
+            font-size: 9px; 
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
-            line-height: 1.4; /* Balanced spacing between the two lines */
+            line-height: 1.4; 
             text-shadow: 0 2px 6px rgba(0,0,0,0.9); 
             text-align: left;
+        }
+        
+        /* Ensure watermark text changes color if light map is active to remain visible */
+        .light-mode-watermark .watermark-text {
+            color: #1f2937;
+            text-shadow: 0 2px 6px rgba(255,255,255,0.9);
         }
 
     </style>
 </head>
 <body>
 
-    <div class="watermark-container">
+    <div class="watermark-container" id="watermark">
         <img src="clean.jpg" alt="Tarlac Rescue Logo" class="watermark-logo">
         <div class="watermark-text">
             Tarlac Provincial Disaster Risk<br>
@@ -224,6 +230,13 @@
             <label>Month</label>
             <select id="monthFilter"><option value="All">All Months</option></select>
         </div>
+        <div class="filter-group">
+            <label>Theme</label>
+            <select id="themeToggle">
+                <option value="dark">Dark Theme</option>
+                <option value="light">Light Theme</option>
+            </select>
+        </div>
     </div>
 
     <div class="category-panel" id="categoryPanel">
@@ -233,11 +246,37 @@
         var map = L.map('map', { zoomControl: false }).setView([15.4802, 120.5979], 11);
         L.control.zoom({ position: 'topleft' }).addTo(map);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        // --- NEW: Basemap Layers ---
+        var darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             subdomains: 'abcd',
             maxZoom: 19
-        }).addTo(map);
+        });
+
+        var lightBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        });
+
+        // Set default basemap
+        var currentBasemap = darkBasemap;
+        currentBasemap.addTo(map);
+
+        // Basemap Toggle Logic
+        document.getElementById('themeToggle').addEventListener('change', function(e) {
+            map.removeLayer(currentBasemap);
+            if (e.target.value === 'light') {
+                currentBasemap = lightBasemap;
+                document.getElementById('watermark').classList.add('light-mode-watermark');
+            } else {
+                currentBasemap = darkBasemap;
+                document.getElementById('watermark').classList.remove('light-mode-watermark');
+            }
+            currentBasemap.addTo(map);
+            currentBasemap.bringToBack(); // Keep heatmap on top
+        });
+
 
         var allData = [];
         var activeCoordinates = []; 
