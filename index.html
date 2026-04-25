@@ -1,377 +1,218 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Tarlac Incident Monitoring</title>
+    <title>Tarlac Incident Heatmap</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    
     <style>
-        #map { height: 100vh; width: 100%; background: #f3f4f6; } 
-        
-        body, .leaflet-container { 
-            margin: 0; padding: 0; 
-            font-family: 'Inter', sans-serif !important; 
+        body, html { margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        #map { height: 100vh; width: 100vw; background: #111; } 
+
+        /* Modern, minimal floating UI */
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(20, 20, 25, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-width: 200px;
         }
 
-        /* --- Zoom Control Styling --- */
-        .leaflet-control-zoom {
-            opacity: 0.5; 
-            border: none !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-            transition: opacity 0.2s ease;
-        }
-        
-        .leaflet-control-zoom:hover, .compass-box:hover {
-            opacity: 0.8; 
+        .control-panel h2 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ef4444; /* Alert Red */
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
         }
 
-        .leaflet-control-zoom a {
-            width: 22px !important;
-            height: 22px !important;
-            line-height: 22px !important;
-            font-size: 14px !important;
-            color: #374151 !important;
+        .filter-group {
+            margin-bottom: 15px;
         }
-
-        /* --- Compass Control Styling --- */
-        .compass-box {
-            background-color: rgba(255, 255, 255, 1);
-            opacity: 0.5; 
-            width: 22px;
-            padding: 4px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            border-radius: 4px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-top: 8px !important;
-            cursor: default;
-            transition: opacity 0.2s ease;
-        }
-        
-        .aura-container { background: none; border: none; }
-        
-        .incident-aura {
-            width: 100%; height: 100%;
-            background: radial-gradient(circle, var(--pulse-core) 10%, var(--pulse-mid) 50%, var(--pulse-edge) 80%);
-            border-radius: 50%;
-            animation: pulse 8s infinite ease-in-out;
-            pointer-events: none;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.7); opacity: 0.9; }
-            50% { transform: scale(1.4); opacity: 0.3; }
-            100% { transform: scale(0.7); opacity: 0.9; }
-        }
-        
-        .center-container { background: none; border: none; }
-        
-        .incident-center {
-            border-radius: 50%;
-            box-shadow: 0 0 0 1px rgba(255,255,255,0.9), 0 0 3px rgba(0,0,0,0.5);
-            width: 100%;
-            height: 100%;
-            transition: opacity 0.3s ease; 
-            opacity: 0; 
-        }
-
-        .show-dot .incident-center { opacity: 1; }
-
-        .info.legend, .info.filter-box {
-            background: rgba(255, 255, 255, 0.7); 
-            backdrop-filter: blur(6px); 
-            color: #374151; 
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); 
-            border-radius: 8px; 
-            border: 1px solid rgba(255, 255, 255, 0.4); 
-        }
-
-        .info.filter-box {
-            padding: 10px 14px; 
-            display: flex; 
-            gap: 12px; 
-            align-items: flex-end; 
-        }
-
-        .info.legend {
-            padding: 12px 16px; 
-            min-width: 130px; 
-        }
-
-        .filter-group { display: flex; flex-direction: column; }
 
         .filter-group label {
-            font-size: 9px; 
-            font-weight: 700;
-            color: #4b5563;
+            display: block;
+            font-size: 11px;
+            color: #9ca3af;
+            margin-bottom: 5px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
         }
 
-        .filter-group select, .filter-group input[type="text"] {
-            width: 120px; 
-            padding: 6px 8px; 
-            border-radius: 4px; 
-            border: 1px solid rgba(209, 213, 219, 0.8); 
-            background-color: rgba(255, 255, 255, 0.9);
-            font-family: 'Inter', sans-serif; 
-            font-size: 11px; 
-            color: #1f2937;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-            margin: 0;
-        }
-        
-        .filter-group input[type="text"] { width: 150px; }
-        .filter-group select { cursor: pointer; }
-
-        .filter-group select:focus, .filter-group input[type="text"]:focus {
+        .filter-group select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
             outline: none;
-            border-color: #dc2626;
-            background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+            cursor: pointer;
         }
 
-        .leaflet-popup-content-wrapper {
-            border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        .filter-group select:focus {
+            border-color: #ef4444;
         }
-        .leaflet-popup-content { margin: 14px; }
+
+        /* Adjust default leaflet zoom controls for dark mode */
+        .leaflet-control-zoom a {
+            background-color: #1f2937 !important;
+            color: #fff !important;
+            border-color: #374151 !important;
+        }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
-    <script>
-        var map = L.map('map', { zoomControl: false }).setView([15.48, 120.59], 10);
-        
-        L.control.zoom({ position: 'topleft' }).addTo(map);
 
-        var DOT_VISIBILITY_ZOOM_THRESHOLD = 15; 
+    <div class="control-panel">
+        <h2>Thermal Density</h2>
         
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap'
+        <div class="filter-group">
+            <label>Filter Year</label>
+            <select id="yearFilter">
+                <option value="All">All Time</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Filter Month</label>
+            <select id="monthFilter">
+                <option value="All">All Months</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        // 1. Initialize Map (Centered on Tarlac)
+        var map = L.map('map').setView([15.4802, 120.5979], 11);
+
+        // 2. Dark Basemap (Perfect for Heatmaps)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
         }).addTo(map);
 
-        var compassControl = L.control({position: 'topleft'});
-        compassControl.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control compass-box');
-            div.innerHTML = `
-                <span style="color:#dc2626; font-size: 9px; font-weight: 800; font-family: 'Inter', sans-serif; line-height: 1;">N</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="#e5e7eb" stroke="#374151" stroke-width="1.5" stroke-linejoin="round" style="margin-top: 2px;">
-                    <polygon points="12 2 18 22 12 17 6 22 12 2"></polygon>
-                </svg>
-            `;
-            return div;
-        };
-        compassControl.addTo(map);
+        // Global variables
+        var allData = [];
+        var heatLayer = null; // Holds the true heatmap
 
-        var incidentMarkers = L.featureGroup().addTo(map);
-        var allIncidentData = [];
-
+        // Your published Google Sheet CSV
         var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
 
-        function getHeatColor(count) {
-            if (count > 50)  return '139, 92, 246'; // Violet (>50)
-            if (count >= 35) return '88, 28, 135';  // Deep Purple (35-50)
-            if (count >= 21) return '112, 26, 117'; // Plum (21-34)
-            if (count >= 11) return '127, 29, 29';  // Dark Maroon (11-20)
-            if (count >= 3)  return '153, 27, 27';  // Dark Red (3-10)
-            return '220, 38, 38';                   // Original Red (1-2)
-        }
-
+        // 3. Parse Data
         Papa.parse(csvUrl, {
             download: true,
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-                allIncidentData = results.data;
-                
-                var years = new Set();
-                var months = new Set();
-                
-                allIncidentData.forEach(row => {
-                    if(row['DATE']) {
-                        let d = new Date(row['DATE']);
-                        if(!isNaN(d)) {
-                            years.add(d.getFullYear());
-                            months.add(d.toLocaleString('default', { month: 'long' }));
-                        }
-                    }
-                });
+                allData = results.data;
+                populateFilters(allData);
+                renderHeatmap();
 
-                var filterControl = L.control({position: 'topright'});
-                filterControl.onAdd = function (map) {
-                    var div = L.DomUtil.create('div', 'info filter-box');
-                    
-                    var searchHTML = '<div class="filter-group"><label>Search Location</label><input type="text" id="searchFilter" placeholder="e.g. San Roque..."></div>';
-
-                    var yearHTML = '<div class="filter-group"><label>Year</label><select id="yearFilter"><option value="All">All Years</option>';
-                    Array.from(years).sort().reverse().forEach(y => yearHTML += `<option value="${y}">${y}</option>`);
-                    yearHTML += '</select></div>';
-
-                    var monthHTML = '<div class="filter-group"><label>Month</label><select id="monthFilter"><option value="All">All Months</option>';
-                    const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                    Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => monthHTML += `<option value="${m}">${m}</option>`);
-                    monthHTML += '</select></div>';
-
-                    div.innerHTML = searchHTML + yearHTML + monthHTML;
-                    return div;
-                };
-                filterControl.addTo(map);
-
-                document.getElementById('searchFilter').addEventListener('input', updateMap);
-                document.getElementById('yearFilter').addEventListener('change', updateMap);
-                document.getElementById('monthFilter').addEventListener('change', updateMap);
-
-                updateMap();
+                // Listen for dropdown changes
+                document.getElementById('yearFilter').addEventListener('change', renderHeatmap);
+                document.getElementById('monthFilter').addEventListener('change', renderHeatmap);
             }
         });
 
-        function toggleDots() {
-            var currentZoom = map.getZoom();
-            var centerMarkers = document.querySelectorAll('.center-container');
+        // 4. Extract Years/Months for Dropdowns
+        function populateFilters(data) {
+            var years = new Set();
+            var months = new Set();
             
-            if (currentZoom >= DOT_VISIBILITY_ZOOM_THRESHOLD) {
-                centerMarkers.forEach(el => el.classList.add('show-dot'));
-            } else {
-                centerMarkers.forEach(el => el.classList.remove('show-dot'));
-            }
+            data.forEach(row => {
+                if(row['DATE']) {
+                    let d = new Date(row['DATE']);
+                    if(!isNaN(d)) {
+                        years.add(d.getFullYear());
+                        months.add(d.toLocaleString('default', { month: 'long' }));
+                    }
+                }
+            });
+
+            var yearSelect = document.getElementById('yearFilter');
+            Array.from(years).sort().reverse().forEach(y => {
+                yearSelect.add(new Option(y, y));
+            });
+
+            var monthSelect = document.getElementById('monthFilter');
+            const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => {
+                monthSelect.add(new Option(m, m));
+            });
         }
 
-        map.on('zoomend', toggleDots);
-
-        function updateMap(event) {
+        // 5. Draw the True Heatmap
+        function renderHeatmap() {
             var selectedYear = document.getElementById('yearFilter').value;
             var selectedMonth = document.getElementById('monthFilter').value;
-            var searchQuery = document.getElementById('searchFilter').value.toLowerCase(); 
 
-            incidentMarkers.clearLayers();
+            // Remove old heatmap if it exists
+            if (heatLayer) {
+                map.removeLayer(heatLayer);
+            }
 
-            var groupedData = {};
+            // Extract coordinates for the heat engine
+            var heatPoints = [];
 
-            allIncidentData.forEach(function(row) {
+            allData.forEach(row => {
                 var lat = parseFloat(row['LATITUDE']);
-                var lng = parseFloat(row['LONGITUDE']); 
+                var lng = parseFloat(row['LONGITUDE']);
                 
                 if (!isNaN(lat) && !isNaN(lng) && row['DATE']) {
                     let d = new Date(row['DATE']);
                     if(!isNaN(d)) {
                         let rowYear = d.getFullYear().toString();
                         let rowMonth = d.toLocaleString('default', { month: 'long' });
-                        let locName = row['LOCATION'] || 'Unknown Location'; 
 
-                        var yearMatch = (selectedYear === 'All' || selectedYear === rowYear);
-                        var monthMatch = (selectedMonth === 'All' || selectedMonth === rowMonth);
-                        var searchMatch = locName.toLowerCase().includes(searchQuery); 
+                        var matchYear = (selectedYear === 'All' || selectedYear === rowYear);
+                        var matchMonth = (selectedMonth === 'All' || selectedMonth === rowMonth);
 
-                        if (yearMatch && monthMatch && searchMatch) {
-                            var locationKey = lat + "_" + lng;
-                            
-                            if (!groupedData[locationKey]) {
-                                groupedData[locationKey] = {
-                                    lat: lat,
-                                    lng: lng,
-                                    locationName: locName, 
-                                    totalIncidents: 0,
-                                    types: {},
-                                    lastDate: row['DATE']
-                                };
-                            }
-
-                            groupedData[locationKey].totalIncidents += 1;
-                            groupedData[locationKey].lastDate = row['DATE'];
-
-                            var incidentType = row['TYPE'] || 'Unspecified';
-                            if (!groupedData[locationKey].types[incidentType]) {
-                                groupedData[locationKey].types[incidentType] = 0;
-                            }
-                            groupedData[locationKey].types[incidentType] += 1;
+                        if (matchYear && matchMonth) {
+                            // Format required by leaflet.heat: [lat, lng, intensity]
+                            // We use an intensity of 1 per record. The plugin handles blending.
+                            heatPoints.push([lat, lng, 1]); 
                         }
                     }
                 }
             });
 
-            var isZoomedIn = map.getZoom() >= DOT_VISIBILITY_ZOOM_THRESHOLD;
-
-            Object.values(groupedData).forEach(function(loc) {
-                var typesHtml = '';
-                for (var t in loc.types) {
-                    typesHtml += `
-                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f3f4f6; padding-bottom: 4px; margin-bottom: 4px;">
-                            <span style="color: #6b7280; font-weight: 600;">${t}:</span>
-                            <span style="color: #b91c1c; font-weight: 700;">${loc.types[t]}</span>
-                        </div>`;
+            // Configure the Heatmap Physics
+            heatLayer = L.heatLayer(heatPoints, {
+                radius: 25,     // Size of each point's influence
+                blur: 15,       // How much the points blend together
+                maxZoom: 14,    // Zoom level where points reach maximum intensity
+                max: 1.0,       // Maximum point intensity
+                gradient: {     // Custom color scale
+                    0.2: '#00f', // Blue (Low)
+                    0.4: '#0ff', // Cyan
+                    0.6: '#0f0', // Green
+                    0.8: '#ff0', // Yellow
+                    1.0: '#f00'  // Red (High)
                 }
-
-                var rgb = getHeatColor(loc.totalIncidents);
-
-                var dynamicAuraHtml = `<div class="incident-aura" style="--pulse-core: rgba(${rgb}, 0.85); --pulse-mid: rgba(${rgb}, 0.2); --pulse-edge: rgba(${rgb}, 0);"></div>`;
-                var customAuraIcon = L.divIcon({ html: dynamicAuraHtml, className: 'aura-container', iconSize: [30, 30], iconAnchor: [15, 15] });
-                
-                L.marker([loc.lat, loc.lng], { icon: customAuraIcon, interactive: false }).addTo(incidentMarkers);
-                
-                var dynamicCenterClassName = isZoomedIn ? 'center-container show-dot' : 'center-container';
-                var dynamicCenterHtml = `<div class="incident-center" style="background-color: rgb(${rgb});"></div>`;
-                var customCenterIcon = L.divIcon({ html: dynamicCenterHtml, className: dynamicCenterClassName, iconSize: [6, 6], iconAnchor: [3, 3] });
-                
-                var marker = L.marker([loc.lat, loc.lng], { icon: customCenterIcon });
-                
-                marker.bindPopup(`
-                    <div style="line-height:1.8; min-width: 180px; font-size: 12px;">
-                        <strong style="font-size: 10px; margin-bottom: 6px; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; display: block;">Location Summary</strong>
-                        
-                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 6px;">
-                            <span style="color: #111827; font-weight: 700;">${loc.locationName}</span>
-                            <span style="color: #b91c1c; font-weight: 700; background: #fee2e2; padding: 0 6px; border-radius: 4px;">Total: ${loc.totalIncidents}</span>
-                        </div>
-                        
-                        <div style="font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Incident Breakdown</div>
-                        ${typesHtml}
-                        
-                        <div style="font-size: 10px; color: #9ca3af; text-align: right; margin-top: 6px;">
-                            Last Logged: ${loc.lastDate}
-                        </div>
-                    </div>
-                `);
-                marker.addTo(incidentMarkers);
-            });
-
-            if (incidentMarkers.getLayers().length > 0 && (!event || event.type !== 'input')) {
-                map.fitBounds(incidentMarkers.getBounds(), { padding: [50, 50] });
-            }
+            }).addTo(map);
         }
-
-        var legend = L.control({position: 'bottomright'});
-        legend.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML += '<strong style="font-size: 9px; font-weight: 700; color: #4b5563; text-transform: uppercase; border-bottom: 2px solid #fee2e2; padding-bottom: 4px; margin-bottom: 8px; display: block;">Incident Density</strong>';
-            
-            const legendTiers = [
-                { label: '51+ (Violet)', rgb: '139, 92, 246' },
-                { label: '35-50', rgb: '88, 28, 135' },
-                { label: '21-34', rgb: '112, 26, 117' },
-                { label: '11-20', rgb: '127, 29, 29' },
-                { label: '3-10', rgb: '153, 27, 27' },
-                { label: '1-2 (Red)', rgb: '220, 38, 38' }
-            ];
-
-            legendTiers.forEach(t => {
-                div.innerHTML += `<div style="display:flex; align-items:center; font-size:11px; font-weight:600; margin-bottom: 5px;">
-                    <div style="width:10px; height:10px; background:rgb(${t.rgb}); border-radius:50%; margin-right:8px; box-shadow: 0 0 0 1px rgba(0,0,0,0.1);"></div> 
-                    ${t.label}
-                </div>`;
-            });
-
-            return div;
-        };
-        legend.addTo(map);
     </script>
 </body>
 </html>
