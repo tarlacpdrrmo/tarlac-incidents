@@ -64,7 +64,7 @@
         .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); font-family: 'Inter', sans-serif; }
         .leaflet-popup-content { margin: 14px; color: #1f2937; }
 
-        /* --- NEW: Dynamic Hover Tooltip Styling --- */
+        /* Dynamic Hover Tooltip Styling */
         #hoverTooltip {
             position: absolute;
             background: rgba(15, 23, 42, 0.85);
@@ -74,24 +74,63 @@
             border-radius: 8px;
             font-size: 11px;
             font-weight: 500;
-            pointer-events: none; /* Let clicks pass through to the map */
+            pointer-events: none; 
             z-index: 2000;
             display: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             border: 1px solid rgba(255,255,255,0.1);
-            transform: translate(15px, 15px); /* Offset from the cursor so it doesn't block it */
+            transform: translate(15px, 15px); 
             white-space: nowrap;
         }
-        .tooltip-highlight {
-            color: #ef4444; /* Alert Red */
-            font-weight: 800;
-            font-size: 13px;
+        .tooltip-highlight { color: #ef4444; font-weight: 800; font-size: 13px; }
+
+        /* --- NEW: Live Sync Indicator --- */
+        .live-status {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: #10b981; /* Emerald green */
+            font-size: 9px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            z-index: 1000;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
         }
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: livePulse 2s infinite;
+        }
+        @keyframes livePulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        /* Class to briefly flash the pill when data actually updates */
+        .update-flash { background: rgba(16, 185, 129, 0.2); color: #fff; border-color: #10b981; }
+
     </style>
 </head>
 <body>
 
     <div id="hoverTooltip">Scanning...</div>
+
+    <div class="live-status" id="liveStatusBox">
+        <div class="live-dot"></div>
+        <span id="liveStatusText">Live Sync Active</span>
+    </div>
 
     <div id="map"></div>
 
@@ -121,27 +160,67 @@
         }).addTo(map);
 
         var allData = [];
-        var activeCoordinates = []; // Stores the points currently visible on the map
+        var activeCoordinates = []; 
         var heatLayer = null; 
         var interactiveLayer = L.featureGroup().addTo(map); 
         var hoverTooltip = document.getElementById('hoverTooltip');
 
         var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
 
-        Papa.parse(csvUrl, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                allData = results.data;
-                populateFilters(allData);
-                renderDashboard();
+        // --- NEW: Polling Engine Execution ---
+        // 1. Fetch immediately on load
+        fetchData(true); 
+        
+        // 2. Poll the Google Sheet every 60 seconds (60000 milliseconds)
+        setInterval(function() { fetchData(false); }, 60000);
 
-                document.getElementById('searchFilter').addEventListener('input', renderDashboard);
-                document.getElementById('yearFilter').addEventListener('change', renderDashboard);
-                document.getElementById('monthFilter').addEventListener('change', renderDashboard);
-            }
-        });
+        // Fetch Logic with Smart Delta Checking
+        function fetchData(isInitialLoad) {
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    if (isInitialLoad) {
+                        allData = results.data;
+                        populateFilters(allData);
+                        renderDashboard();
+                    } else {
+                        // Check if the total row count changed (new incident logged)
+                        if (results.data.length !== allData.length) {
+                            allData = results.data;
+                            
+                            // Keep current dropdown selections intact
+                            var currentYear = document.getElementById('yearFilter').value;
+                            var currentMonth = document.getElementById('monthFilter').value;
+                            
+                            populateFilters(allData); 
+                            
+                            // Restore selections if they still exist
+                            document.getElementById('yearFilter').value = currentYear;
+                            document.getElementById('monthFilter').value = currentMonth;
+                            
+                            renderDashboard();
+                            flashUpdateNotification();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Briefly flashes the live indicator to let the user know an update just happened
+        function flashUpdateNotification() {
+            var statusBox = document.getElementById('liveStatusBox');
+            var statusText = document.getElementById('liveStatusText');
+            
+            statusBox.classList.add('update-flash');
+            statusText.innerText = "Data Updated!";
+            
+            setTimeout(() => {
+                statusBox.classList.remove('update-flash');
+                statusText.innerText = "Live Sync Active";
+            }, 3000);
+        }
 
         function populateFilters(data) {
             var years = new Set();
@@ -158,35 +237,38 @@
             });
 
             var yearSelect = document.getElementById('yearFilter');
+            yearSelect.innerHTML = '<option value="All">All Years</option>'; // Reset
             Array.from(years).sort().reverse().forEach(y => { yearSelect.add(new Option(y, y)); });
 
             var monthSelect = document.getElementById('monthFilter');
+            monthSelect.innerHTML = '<option value="All">All Months</option>'; // Reset
             const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => { monthSelect.add(new Option(m, m)); });
         }
 
-        // Zoom-Responsive Heat Physics Engine
+        // Listeners for manual filtering
+        document.getElementById('searchFilter').addEventListener('input', renderDashboard);
+        document.getElementById('yearFilter').addEventListener('change', renderDashboard);
+        document.getElementById('monthFilter').addEventListener('change', renderDashboard);
+
         function updateHeatmapPhysics() {
             if (!heatLayer) return;
             var currentZoom = map.getZoom();
             var dynamicRadius = Math.max(10, 45 - (currentZoom - 10) * 6);
             var dynamicBlur = Math.max(10, 30 - (currentZoom - 10) * 4);
-
             heatLayer.setOptions({ radius: dynamicRadius, blur: dynamicBlur });
         }
 
         map.on('zoomend', updateHeatmapPhysics);
 
-        // --- NEW: Spatial Querying for Hover Analytics ---
         map.on('mousemove', function(e) {
             hoverTooltip.style.display = 'block';
             hoverTooltip.style.left = e.originalEvent.clientX + 'px';
             hoverTooltip.style.top = e.originalEvent.clientY + 'px';
 
             var incidentCount = 0;
-            var searchRadiusMeters = 1000; // Calculates density within a 1km radius
+            var searchRadiusMeters = 1000; 
 
-            // Check distance to all currently filtered points
             for(var i = 0; i < activeCoordinates.length; i++) {
                 if (e.latlng.distanceTo(activeCoordinates[i]) <= searchRadiusMeters) {
                     incidentCount++;
@@ -200,10 +282,7 @@
             }
         });
 
-        // Hide tooltip when mouse leaves the map area
-        map.on('mouseout', function() {
-            hoverTooltip.style.display = 'none';
-        });
+        map.on('mouseout', function() { hoverTooltip.style.display = 'none'; });
 
         function renderDashboard() {
             var selectedYear = document.getElementById('yearFilter').value;
@@ -215,7 +294,7 @@
 
             var heatPoints = [];
             var groupedData = {};
-            activeCoordinates = []; // Reset active coordinates for the hover tool
+            activeCoordinates = []; 
 
             allData.forEach(row => {
                 var lat = parseFloat(row['LATITUDE']);
@@ -234,7 +313,7 @@
 
                         if (matchYear && matchMonth && matchSearch) {
                             heatPoints.push([lat, lng, 1]); 
-                            activeCoordinates.push(L.latLng(lat, lng)); // Feed the spatial query engine
+                            activeCoordinates.push(L.latLng(lat, lng)); 
 
                             var locationKey = lat + "_" + lng;
                             var incidentType = row['TYPE'] || 'Unspecified';
@@ -280,7 +359,6 @@
                         </div>`;
                 }
 
-                // "Ghost" pinpoint marker
                 var ghostMarker = L.circleMarker([loc.lat, loc.lng], {
                     radius: 12, 
                     fillColor: "transparent",
