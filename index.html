@@ -55,6 +55,61 @@
         .filter-group input[type="text"] { width: 110px; cursor: text; }
         .filter-group select:focus, .filter-group input[type="text"]:focus { border-color: #ef4444; background: rgba(0, 0, 0, 0.6); }
 
+        /* --- NEW: Custom iOS-Style Theme Switch --- */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 4px;
+            padding-left: 12px;
+            border-left: 1px solid rgba(255, 255, 255, 0.1); /* Subtle divider line */
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 32px;
+            height: 18px;
+        }
+        
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: .3s ease;
+            border-radius: 18px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #94a3b8; /* Subtle silver knob */
+            transition: .3s ease;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: rgba(255, 255, 255, 0.3); /* Frosted light state */
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(14px);
+            background-color: #ffffff; /* Bright white knob */
+        }
+
         /* Category Toggles Styling */
         .category-panel {
             position: absolute;
@@ -190,7 +245,7 @@
             text-align: left;
         }
         
-        /* Ensure watermark text changes color if light map is active to remain visible */
+        /* Watermark text changes color if light map is active to remain visible */
         .light-mode-watermark .watermark-text {
             color: #1f2937;
             text-shadow: 0 2px 6px rgba(255,255,255,0.9);
@@ -230,12 +285,13 @@
             <label>Month</label>
             <select id="monthFilter"><option value="All">All Months</option></select>
         </div>
-        <div class="filter-group">
-            <label>Theme</label>
-            <select id="themeToggle">
-                <option value="dark">Dark Theme</option>
-                <option value="light">Light Theme</option>
-            </select>
+        
+        <div class="switch-container">
+            <label style="font-size: 8px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Light Map</label>
+            <label class="switch">
+                <input type="checkbox" id="themeToggleCheckbox">
+                <span class="slider"></span>
+            </label>
         </div>
     </div>
 
@@ -246,7 +302,7 @@
         var map = L.map('map', { zoomControl: false }).setView([15.4802, 120.5979], 11);
         L.control.zoom({ position: 'topleft' }).addTo(map);
 
-        // --- NEW: Basemap Layers ---
+        // Basemap Layers
         var darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             subdomains: 'abcd',
@@ -263,10 +319,10 @@
         var currentBasemap = darkBasemap;
         currentBasemap.addTo(map);
 
-        // Basemap Toggle Logic
-        document.getElementById('themeToggle').addEventListener('change', function(e) {
+        // --- NEW: Toggle Switch Logic ---
+        document.getElementById('themeToggleCheckbox').addEventListener('change', function(e) {
             map.removeLayer(currentBasemap);
-            if (e.target.value === 'light') {
+            if (e.target.checked) {
                 currentBasemap = lightBasemap;
                 document.getElementById('watermark').classList.add('light-mode-watermark');
             } else {
@@ -274,9 +330,8 @@
                 document.getElementById('watermark').classList.remove('light-mode-watermark');
             }
             currentBasemap.addTo(map);
-            currentBasemap.bringToBack(); // Keep heatmap on top
+            currentBasemap.bringToBack(); 
         });
-
 
         var allData = [];
         var activeCoordinates = []; 
