@@ -114,10 +114,10 @@
         .impact-number.flood { color: #3b82f6; } 
         .impact-number.vehicle { color: #f59e0b; } 
 
-        /* --- NEW: Treemap Components --- */
+        /* Treemap Components */
         .treemap-toggle-btn {
             position: absolute;
-            top: 85px; /* Positioned below Leaflet Zoom Controls */
+            top: 85px; 
             left: 15px;
             z-index: 1000;
             background: rgba(15, 23, 42, 0.85);
@@ -139,16 +139,17 @@
         .treemap-panel {
             position: absolute;
             top: 85px;
-            left: 55px; /* Slide out to the right of the button */
+            left: 55px; 
             z-index: 1000;
             background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 16px;
-            width: 350px;
+            /* INCREASED WIDTH HERE */
+            width: 480px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            display: none; /* Hidden initially */
+            display: none; 
             flex-direction: column;
             gap: 10px;
             opacity: 0;
@@ -231,7 +232,8 @@
             <h3>Incident Volume by Location</h3>
             <button class="close-treemap" id="closeTreemapBtn">&times;</button>
         </div>
-        <div id="chartContainer" style="min-height: 250px;"></div>
+        <!-- INCREASED MIN-HEIGHT HERE -->
+        <div id="chartContainer" style="min-height: 380px;"></div>
     </div>
 
     <div id="map"></div>
@@ -284,7 +286,6 @@
             currentBasemap.bringToBack(); 
         });
 
-        // Toggle UI Logic for Treemap
         var treemapPanel = document.getElementById('treemapPanel');
         document.getElementById('treemapToggleBtn').addEventListener('click', function() {
             if(treemapPanel.classList.contains('active')) {
@@ -292,7 +293,6 @@
                 setTimeout(() => treemapPanel.style.display = 'none', 300);
             } else {
                 treemapPanel.style.display = 'flex';
-                // Trigger reflow for animation
                 void treemapPanel.offsetWidth; 
                 treemapPanel.classList.add('active');
             }
@@ -309,7 +309,7 @@
         var interactiveLayer = L.featureGroup().addTo(map); 
         var hoverTooltip = document.getElementById('hoverTooltip');
         var currentCategory = 'All'; 
-        var apexTreemapChart = null; // Global variable for the chart
+        var apexTreemapChart = null; 
 
         var csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDvZ_Avf8dU1XZUuo0HrrQbyEqpsukfyrb964X81Cwl9a2Vi5h07_m2ckWuReZrVVtlQB9eaH4_AZc/pub?gid=349846799&single=true&output=csv'; 
 
@@ -432,47 +432,57 @@
 
         map.on('mouseout', function() { hoverTooltip.style.display = 'none'; });
 
-        // Chart Rendering Logic
+        // --- UPDATED CHART RENDERING LOGIC ---
         function updateTreemapChart(locationCounts) {
-            // Transform object into array format expected by ApexCharts: [{x: 'Location', y: Count}]
             var chartData = [];
             for (var loc in locationCounts) {
-                // Ensure we don't display empty string locations
                 if (loc.trim() !== '') {
-                    // Truncate "City of Tarlac (Capital), " prefix to save space in the blocks if needed
                     let displayLoc = loc.replace("City of Tarlac (Capital), ", "");
                     chartData.push({ x: displayLoc, y: locationCounts[loc] });
                 }
             }
 
-            // Sort highest to lowest to make the map render cleanly
             chartData.sort((a, b) => b.y - a.y);
-            
-            // Limit to Top 40 to avoid overcrowding the panel
-            chartData = chartData.slice(0, 40);
+            chartData = chartData.slice(0, 30); // Reduced to Top 30 to give blocks more space
 
             if (!apexTreemapChart) {
-                // Initial creation
                 var options = {
                     series: [{ data: chartData }],
                     legend: { show: false },
-                    chart: { type: 'treemap', height: 260, toolbar: { show: false }, background: 'transparent' },
+                    // Increased Chart Height
+                    chart: { type: 'treemap', height: 380, toolbar: { show: false }, background: 'transparent' },
                     title: { text: '' },
                     dataLabels: {
                         enabled: true,
-                        style: { fontSize: '11px', fontFamily: 'Inter, sans-serif', fontWeight: 600 },
+                        style: { 
+                            fontSize: '13px', // Increased Font Size
+                            fontFamily: 'Inter, sans-serif', 
+                            fontWeight: 800, // Made bolder
+                            colors: ['#ffffff'] // Force white text for contrast
+                        },
+                        // Added Drop Shadow for readability
+                        dropShadow: {
+                            enabled: true,
+                            top: 1,
+                            left: 1,
+                            blur: 2,
+                            color: '#000',
+                            opacity: 0.8
+                        },
                         formatter: function(text, op) { return [text, op.value] }
                     },
                     plotOptions: {
                         treemap: {
                             enableShades: true,
-                            shadeIntensity: 0.5,
+                            shadeIntensity: 0.2, // Lowered shade to keep colors vibrant
                             reverseNegativeShade: true,
+                            // New "Disaster Risk" Color Palette
                             colorScale: {
                                 ranges: [
-                                    { from: 1, to: 5, color: '#3b82f6' }, // Blue
-                                    { from: 6, to: 15, color: '#f59e0b' }, // Amber
-                                    { from: 16, to: 9999, color: '#ef4444' } // Red
+                                    { from: 1, to: 2, color: '#0ea5e9' }, // Light Blue (Low)
+                                    { from: 3, to: 5, color: '#f59e0b' }, // Amber (Medium)
+                                    { from: 6, to: 10, color: '#ef4444' }, // Red (High)
+                                    { from: 11, to: 9999, color: '#831843' } // Dark Rose/Purple (Severe)
                                 ]
                             }
                         }
@@ -482,7 +492,6 @@
                 apexTreemapChart = new ApexCharts(document.querySelector("#chartContainer"), options);
                 apexTreemapChart.render();
             } else {
-                // Simply update the data inside the existing chart dynamically
                 apexTreemapChart.updateSeries([{ data: chartData }]);
             }
         }
@@ -497,7 +506,7 @@
 
             var heatPoints = [];
             var groupedData = {};
-            var locationCounts = {}; // NEW: Used for the Treemap aggregation
+            var locationCounts = {}; 
             activeCoordinates = []; 
             
             var rawFloodIncidents = 0;
@@ -524,7 +533,6 @@
                             heatPoints.push([lat, lng, 1]); 
                             activeCoordinates.push(L.latLng(lat, lng)); 
 
-                            // Tallying for Impact Analytics
                             let lowerType = incidentType.toLowerCase();
                             if(lowerType.includes('flood') || lowerType.includes('typhoon')) {
                                 rawFloodIncidents++;
@@ -533,7 +541,6 @@
                                 rawVehicularIncidents++;
                             }
 
-                            // Tallying for Treemap Array
                             locationCounts[locName] = (locationCounts[locName] || 0) + 1;
 
                             var locationKey = lat + "_" + lng;
@@ -557,11 +564,9 @@
                 }
             });
 
-            // Update Impact Panel
             document.getElementById('statFloodFamilies').innerText = (rawFloodIncidents * 15).toLocaleString();
             document.getElementById('statVehicles').innerText = (rawVehicularIncidents * 2).toLocaleString();
 
-            // Update the Treemap Chart with the filtered location counts
             updateTreemapChart(locationCounts);
 
             var initialZoom = map.getZoom();
