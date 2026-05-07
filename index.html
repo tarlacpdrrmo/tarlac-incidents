@@ -148,6 +148,7 @@
             background: #ffffff; width: 85vw; height: 85vh; border-radius: 12px;
             padding: 24px; display: flex; flex-direction: column;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden; /* Added to fix chart overflowing the container */
         }
 
         /* MODIFIED: Header & Close Button */
@@ -229,7 +230,7 @@
                 <h3>Incident Volume per Barangay</h3>
                 <button class="close-treemap" id="closeTreemapBtn">&times;</button>
             </div>
-            <div id="chartContainer" style="flex: 1; width: 100%; min-height: 0;"></div>
+            <div id="chartContainer" style="flex: 1; width: 100%; min-height: 0; position: relative; overflow: hidden;"></div>
         </div>
     </div>
 
@@ -282,12 +283,16 @@
             currentBasemap.bringToBack(); 
         });
 
-        // MODIFIED: Treemap Modal Listeners
+        // MODIFIED: Treemap Modal Listeners with Resize Delay to fix overlapping issue
         var treemapOverlay = document.getElementById('treemapOverlay');
         document.getElementById('treemapToggleBtn').addEventListener('click', function() {
             treemapOverlay.style.display = 'flex';
-            setTimeout(() => treemapOverlay.classList.add('active'), 10);
-            if(apexTreemapChart) apexTreemapChart.windowResize();
+            setTimeout(() => {
+                treemapOverlay.classList.add('active');
+                if(apexTreemapChart) {
+                    window.dispatchEvent(new Event('resize')); 
+                }
+            }, 50);
         });
 
         document.getElementById('closeTreemapBtn').addEventListener('click', function() {
