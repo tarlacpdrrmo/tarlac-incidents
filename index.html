@@ -112,29 +112,31 @@
         .impact-number.flood { color: #3b82f6; } 
         .impact-number.vehicle { color: #f59e0b; } 
 
-        /* UPDATED: Fullscreen Treemap Overlay */
+        /* UPDATED: FULLSCREEN POPUP OVERLAY */
         .treemap-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(15px);
             z-index: 9999;
             display: none;
             justify-content: center;
             align-items: center;
             opacity: 0;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.4s ease;
         }
         .treemap-overlay.active { display: flex; opacity: 1; }
         .treemap-content-wrapper { width: 95vw; height: 90vh; display: flex; flex-direction: column; gap: 15px; }
-
-        /* UPDATED: Treemap Header & Close */
         .treemap-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
         .treemap-header h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #f8fafc; font-weight: 700; }
-        .close-treemap { background: #ef4444; border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .close-treemap:hover { background: #dc2626; transform: scale(1.1); }
+        .close-treemap { background: #ef4444; border: none; color: white; width: 35px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 20px; font-weight: 800; transition: 0.2s; }
 
-        /* UPDATED: Modern Expand Button Icon */
+        /* UPDATED: MODERN BUTTONS & ICONS */
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important; background: rgba(15, 23, 42, 0.85) !important; border-radius: 8px !important; overflow: hidden; }
+        .leaflet-control-zoom a { width: 34px !important; height: 34px !important; line-height: 34px !important; color: white !important; background: transparent !important; border: none !important; transition: 0.2s; }
+        .leaflet-control-zoom a:hover { background: rgba(255,255,255,0.1) !important; }
+        .leaflet-control-zoom-in { border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
+
         .treemap-toggle-btn {
             position: absolute;
             top: 85px; 
@@ -154,33 +156,22 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             transition: all 0.2s ease;
         }
-        .treemap-toggle-btn:hover { background: #ef4444; color: white; transform: scale(1.05); }
+        .treemap-toggle-btn:hover { background: #ef4444; transform: scale(1.05); }
 
-        /* UPDATED: Leaflet Controls Fix (No White Gaps) */
-        .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important; margin-top: 15px !important; margin-left: 15px !important; background: rgba(15, 23, 42, 0.85) !important; border-radius: 8px !important; overflow: hidden; }
-        .leaflet-control-zoom a { width: 34px !important; height: 34px !important; line-height: 34px !important; background: transparent !important; color: #cbd5e1 !important; border: none !important; transition: 0.2s; }
-        .leaflet-control-zoom a:hover { background: rgba(255,255,255,0.1) !important; color: white !important; }
-        .leaflet-control-zoom-in { border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
-
-        /* Popups */
+        /* Popups & Tooltips */
         .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); font-family: 'Inter', sans-serif; }
         .leaflet-popup-content { margin: 14px; color: #1f2937; }
-
-        /* Dynamic Hover Tooltip */
         #hoverTooltip { position: absolute; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); color: #f8fafc; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 500; pointer-events: none; z-index: 2000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); transform: translate(15px, 15px); white-space: nowrap; }
         .tooltip-highlight { color: #ef4444; font-weight: 800; font-size: 13px; }
 
-        /* Live Sync Indicator */
-        .live-status { position: absolute; bottom: 20px; right: 20px; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); padding: 6px 12px; border-radius: 20px; color: #10b981; font-size: 9px; font-weight: 700; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(16, 185, 129, 0.2); z-index: 1000; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease; }
+        /* Status & Watermark */
+        .live-status { position: absolute; bottom: 20px; right: 20px; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); padding: 6px 12px; border-radius: 20px; color: #10b981; font-size: 9px; font-weight: 700; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(16, 185, 129, 0.2); z-index: 1000; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .live-dot { width: 6px; height: 6px; background: #10b981; border-radius: 50%; animation: livePulse 2s infinite; }
         @keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-
-        /* Watermark */
         .watermark-container { position: absolute; bottom: 20px; left: 20px; z-index: 1000; display: flex; align-items: center; gap: 15px; opacity: 0.4; pointer-events: none; transition: opacity 0.3s ease; }
         .watermark-logo { width: 75px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
         .watermark-text { color: #ffffff; font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; line-height: 1.4; text-shadow: 0 2px 6px rgba(0,0,0,0.9); text-align: left; }
         .light-mode-watermark .watermark-text { color: #1f2937; text-shadow: 0 2px 6px rgba(255,255,255,0.9); }
-
     </style>
 </head>
 <body>
@@ -224,7 +215,7 @@
     <div class="treemap-overlay" id="treemapOverlay">
         <div class="treemap-content-wrapper">
             <div class="treemap-header">
-                <h3>Incident Volume by Location (Analytics View)</h3>
+                <h3>Incident Volume by Location (Pop-up View)</h3>
                 <button class="close-treemap" id="closeTreemapBtn">&times;</button>
             </div>
             <div id="chartContainer" style="flex: 1; min-height: 0;"></div>
@@ -269,27 +260,21 @@
 
         document.getElementById('themeToggleCheckbox').addEventListener('change', function(e) {
             map.removeLayer(currentBasemap);
-            if (e.target.checked) {
-                currentBasemap = lightBasemap;
-                document.getElementById('watermark').classList.add('light-mode-watermark');
-            } else {
-                currentBasemap = darkBasemap;
-                document.getElementById('watermark').classList.remove('light-mode-watermark');
-            }
-            currentBasemap.addTo(map).bringToBack(); 
+            currentBasemap = e.target.checked ? lightBasemap : darkBasemap;
+            currentBasemap.addTo(map).bringToBack();
+            document.getElementById('watermark').classList.toggle('light-mode-watermark', e.target.checked);
         });
 
-        // Treemap Overlay Trigger
+        // Overlay Logic
         var treemapOverlay = document.getElementById('treemapOverlay');
         document.getElementById('treemapToggleBtn').addEventListener('click', function() {
             treemapOverlay.style.display = 'flex';
             setTimeout(() => treemapOverlay.classList.add('active'), 10);
             if(apexTreemapChart) apexTreemapChart.windowResize();
         });
-
         document.getElementById('closeTreemapBtn').addEventListener('click', function() {
             treemapOverlay.classList.remove('active');
-            setTimeout(() => treemapOverlay.style.display = 'none', 500);
+            setTimeout(() => treemapOverlay.style.display = 'none', 400);
         });
 
         var allData = [];
@@ -307,24 +292,13 @@
 
         function fetchData(isInitialLoad) {
             Papa.parse(csvUrl, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
+                download: true, header: true, skipEmptyLines: true,
                 complete: function(results) {
-                    if (isInitialLoad || results.data.length !== allData.length) {
-                        allData = results.data;
-                        if(isInitialLoad) populateFilters(allData);
-                        renderDashboard();
-                        if(!isInitialLoad) flashUpdateNotification();
-                    }
+                    allData = results.data;
+                    if (isInitialLoad) populateFilters(allData);
+                    renderDashboard();
                 }
             });
-        }
-
-        function flashUpdateNotification() {
-            var statusBox = document.getElementById('liveStatusBox');
-            statusBox.style.background = 'rgba(16, 185, 129, 0.4)';
-            setTimeout(() => statusBox.style.background = 'rgba(15, 23, 42, 0.75)', 3000);
         }
 
         function populateFilters(data) {
@@ -332,28 +306,20 @@
             data.forEach(row => {
                 if(row['DATE']) {
                     let d = new Date(row['DATE']);
-                    if(!isNaN(d)) {
-                        years.add(d.getFullYear());
-                        months.add(d.toLocaleString('default', { month: 'long' }));
-                    }
+                    if(!isNaN(d)) { years.add(d.getFullYear()); months.add(d.toLocaleString('default', { month: 'long' })); }
                 }
-                if(row['TYPE']) { types.add(row['TYPE'].trim()); }
+                if(row['TYPE']) types.add(row['TYPE'].trim());
             });
-
             var yearSelect = document.getElementById('yearFilter');
             yearSelect.innerHTML = '<option value="All">All Years</option>'; 
             Array.from(years).sort().reverse().forEach(y => yearSelect.add(new Option(y, y)));
-
             var monthSelect = document.getElementById('monthFilter');
             monthSelect.innerHTML = '<option value="All">All Months</option>'; 
             const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             Array.from(months).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b)).forEach(m => monthSelect.add(new Option(m, m)));
-
             var catPanel = document.getElementById('categoryPanel');
             var buttonsHtml = `<button class="category-btn ${currentCategory === 'All' ? 'active' : ''}" onclick="setCategory('All')">All</button>`;
-            Array.from(types).sort().forEach(t => {
-                if(t !== "") buttonsHtml += `<button class="category-btn ${currentCategory === t ? 'active' : ''}" onclick="setCategory('${t}')">${t}</button>`;
-            });
+            Array.from(types).sort().forEach(t => { if(t !== "") buttonsHtml += `<button class="category-btn ${currentCategory === t ? 'active' : ''}" onclick="setCategory('${t}')">${t}</button>`; });
             catPanel.innerHTML = buttonsHtml;
         }
 
@@ -367,7 +333,6 @@
         document.getElementById('yearFilter').addEventListener('change', renderDashboard);
         document.getElementById('monthFilter').addEventListener('change', renderDashboard);
 
-        // Treemap Chart Logic
         function updateTreemapChart(locationCounts) {
             var chartData = [];
             for (var loc in locationCounts) {
@@ -383,25 +348,10 @@
                     theme: { mode: 'dark' },
                     dataLabels: {
                         enabled: true,
-                        style: { 
-                            fontSize: '16px', // UPDATED: Large Bold Font
-                            fontWeight: 800,
-                            fontFamily: 'Inter, sans-serif'
-                        },
-                        formatter: function(text, op) { return [text, op.value] }
+                        style: { fontSize: '18px', fontWeight: '800', fontFamily: 'Inter' }, // UPDATED: Readable Font
+                        formatter: (text, op) => [text, op.value]
                     },
-                    plotOptions: {
-                        treemap: {
-                            enableShades: true,
-                            colorScale: {
-                                ranges: [
-                                    { from: 1, to: 2, color: '#0ea5e9' },
-                                    { from: 3, to: 6, color: '#f59e0b' },
-                                    { from: 7, to: 999, color: '#ef4444' }
-                                ]
-                            }
-                        }
-                    }
+                    plotOptions: { treemap: { enableShades: true } }
                 };
                 apexTreemapChart = new ApexCharts(document.querySelector("#chartContainer"), options);
                 apexTreemapChart.render();
@@ -418,29 +368,34 @@
             if (heatLayer) map.removeLayer(heatLayer);
             interactiveLayer.clearLayers();
 
-            var heatPoints = [];
-            var locationCounts = {}; 
-            activeCoordinates = []; 
-            var flood = 0, vehicle = 0;
+            var heatPoints = [], locationCounts = {}, groupedData = {}, flood = 0, vehicle = 0;
+            activeCoordinates = [];
 
             allData.forEach(row => {
                 var lat = parseFloat(row['LATITUDE']), lng = parseFloat(row['LONGITUDE']);
                 if (!isNaN(lat) && !isNaN(lng) && row['DATE']) {
                     let d = new Date(row['DATE']);
                     let rowYear = d.getFullYear().toString(), rowMonth = d.toLocaleString('default', { month: 'long' });
-                    let loc = row['LOCATION'] || 'Unknown', type = row['TYPE'] ? row['TYPE'].trim() : 'Unspecified';
+                    let locName = row['LOCATION'] || 'Unknown', type = row['TYPE'] ? row['TYPE'].trim() : 'Unspecified';
 
                     if ((selectedYear === 'All' || selectedYear === rowYear) &&
                         (selectedMonth === 'All' || selectedMonth === rowMonth) &&
-                        loc.toLowerCase().includes(searchQuery) &&
+                        locName.toLowerCase().includes(searchQuery) &&
                         (currentCategory === 'All' || type === currentCategory)) {
                         
                         heatPoints.push([lat, lng, 1]);
                         activeCoordinates.push(L.latLng(lat, lng)); 
-                        locationCounts[loc] = (locationCounts[loc] || 0) + 1;
-
+                        locationCounts[locName] = (locationCounts[locName] || 0) + 1;
                         if(type.toLowerCase().includes('flood')) flood++;
                         if(type.toLowerCase().includes('accident')) vehicle++;
+
+                        // RESTORED Grouping Logic for Popups
+                        var key = lat + "_" + lng;
+                        if (!groupedData[key]) {
+                            groupedData[key] = { lat, lng, name: locName, total: 0, types: {}, date: row['DATE'] };
+                        }
+                        groupedData[key].total++;
+                        groupedData[key].types[type] = (groupedData[key].types[type] || 0) + 1;
                     }
                 }
             });
@@ -449,6 +404,14 @@
             document.getElementById('statVehicles').innerText = (vehicle * 2).toLocaleString();
             updateTreemapChart(locationCounts);
             heatLayer = L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 14 }).addTo(map);
+
+            // RESTORED Ghost Markers for Popups
+            Object.values(groupedData).forEach(loc => {
+                var typesHtml = Object.entries(loc.types).map(([t, count]) => `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #eee;margin-bottom:4px;"><span style="color:#666;">${t}:</span><b>${count}</b></div>`).join('');
+                L.circleMarker([loc.lat, loc.lng], { radius: 12, color: 'transparent', fillOpacity: 0 })
+                    .bindPopup(`<div style="min-width:180px;"><b>${loc.name}</b><br><span style="color:red">Total Incidents: ${loc.total}</span><br>${typesHtml}<br><small>${loc.date}</small></div>`)
+                    .addTo(interactiveLayer);
+            });
         }
 
         map.on('mousemove', function(e) {
