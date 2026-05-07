@@ -112,7 +112,7 @@
         .impact-number.flood { color: #3b82f6; } 
         .impact-number.vehicle { color: #f59e0b; } 
 
-        /* MODIFIED: Treemap Modern Toggle Button */
+        /* Treemap Chart Icon Button */
         .treemap-toggle-btn {
             position: absolute;
             top: 85px; 
@@ -134,25 +134,29 @@
         }
         .treemap-toggle-btn:hover { background: #ef4444; transform: scale(1.05); }
 
-        /* MODIFIED: Fullscreen Blur Overlay */
+        /* Fullscreen Blur Overlay */
         .treemap-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
             z-index: 9999; display: none; justify-content: center; align-items: center;
             opacity: 0; transition: opacity 0.3s ease;
         }
         .treemap-overlay.active { opacity: 1; display: flex; }
 
-        /* MODIFIED: The White Card Container */
+        /* The White Card Container - Fixed to prevent cutting and overflowing */
         .treemap-modal {
-            background: #ffffff; width: 85vw; height: 85vh; border-radius: 12px;
+            background: #ffffff; width: 90vw; height: 85vh; border-radius: 12px;
             padding: 24px; display: flex; flex-direction: column;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            overflow: hidden; /* Added to fix chart overflowing the container */
+            box-sizing: border-box; 
         }
 
-        /* MODIFIED: Header & Close Button */
-        .treemap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;}
+        /* Header & Close Button */
+        .treemap-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;
+            flex-shrink: 0; /* Ensures header is never squished */
+        }
         .treemap-header h3 { margin: 0; color: #1e293b; font-size: 14px; font-weight: 800; text-transform: uppercase; }
         .close-treemap { 
             background: #f1f5f9; border: none; color: #64748b; width: 28px; height: 28px; 
@@ -160,7 +164,7 @@
         }
         .close-treemap:hover { background: #e2e8f0; color: #ef4444; }
 
-        /* MODIFIED: Clean Zoom Controls */
+        /* Clean Zoom Controls */
         .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important; background: rgba(15, 23, 42, 0.85) !important; border-radius: 8px !important; overflow: hidden; margin-top: 15px !important; margin-left: 15px !important; }
         .leaflet-control-zoom a { width: 34px !important; height: 34px !important; line-height: 34px !important; color: white !important; background: transparent !important; border: none !important; transition: 0.2s; font-size: 16px !important; }
         .leaflet-control-zoom a:hover { background: rgba(255,255,255,0.1) !important; }
@@ -227,10 +231,12 @@
     <div class="treemap-overlay" id="treemapOverlay">
         <div class="treemap-modal">
             <div class="treemap-header">
-                <h3>Incident Volume per Barangay</h3>
+                <h3>Incident Volume by Barangay</h3>
                 <button class="close-treemap" id="closeTreemapBtn">&times;</button>
             </div>
-            <div id="chartContainer" style="flex: 1; width: 100%; min-height: 0; position: relative; overflow: hidden;"></div>
+            <div style="flex: 1; position: relative; width: 100%; min-height: 0;">
+                <div id="chartContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+            </div>
         </div>
     </div>
 
@@ -283,16 +289,14 @@
             currentBasemap.bringToBack(); 
         });
 
-        // MODIFIED: Treemap Modal Listeners with Resize Delay to fix overlapping issue
+        // Treemap Modal Listeners
         var treemapOverlay = document.getElementById('treemapOverlay');
         document.getElementById('treemapToggleBtn').addEventListener('click', function() {
             treemapOverlay.style.display = 'flex';
             setTimeout(() => {
                 treemapOverlay.classList.add('active');
-                if(apexTreemapChart) {
-                    window.dispatchEvent(new Event('resize')); 
-                }
-            }, 50);
+                if(apexTreemapChart) apexTreemapChart.windowResize();
+            }, 10);
         });
 
         document.getElementById('closeTreemapBtn').addEventListener('click', function() {
@@ -429,7 +433,6 @@
 
         map.on('mouseout', function() { hoverTooltip.style.display = 'none'; });
 
-        // MODIFIED: Treemap Chart Colors and Formatting
         function updateTreemapChart(locationCounts) {
             var chartData = [];
             for (var loc in locationCounts) {
@@ -445,10 +448,10 @@
             if (!apexTreemapChart) {
                 var options = {
                     series: [{ data: chartData }],
-                    chart: { type: 'treemap', height: '100%', toolbar: { show: false }, background: '#ffffff' },
+                    chart: { type: 'treemap', height: '100%', width: '100%', toolbar: { show: false }, background: '#ffffff' },
                     dataLabels: {
                         enabled: true,
-                        style: { fontSize: '14px', fontWeight: '700', fontFamily: 'Inter', colors: ['#ffffff'] },
+                        style: { fontSize: '13px', fontWeight: '700', fontFamily: 'Inter', colors: ['#ffffff'] },
                         formatter: function(text, op) { return [text, op.value] }
                     },
                     plotOptions: {
